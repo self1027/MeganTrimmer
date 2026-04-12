@@ -19,16 +19,9 @@ export function trimVideo(
     ffmpeg(input)
       .inputOptions([`-ss ${start}`]) 
       .setDuration(duration)
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .audioBitrate(192)
       .outputOptions([
-        '-preset superfast',
-        '-crf 18',
-        '-map 0',
-        '-pix_fmt yuv420p',
-        '-movflags', '+faststart',
-        '-vsync', 'passthrough',
+        '-c', 'copy', 
+        '-map', '0',
         '-avoid_negative_ts', 'make_zero'
       ])
       .output(output)
