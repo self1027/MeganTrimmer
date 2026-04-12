@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: file:;">
+  <link rel="stylesheet" href="./lib/bootstrap.min.css">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Video Trimmer</title>
+</head>
+<body class="bg-dark text-light">
+
+  <div class="container-fluid py-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-xl-10">
+        
+        <div class="card bg-black border-secondary shadow-lg">
+          <div class="card-body p-4">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="m-0 text-uppercase tracking-wider">VIDEO TRIMMER</h5>
+              <button id="select" class="btn btn-outline-light btn-sm px-4">
+                ABRIR ARQUIVO
+              </button>
+            </div>
+
+            <div class="ratio ratio-16x9 bg-black border border-secondary rounded-1 overflow-hidden mb-4">
+              <video id="preview" class="w-100 h-100"></video>
+            </div>
+
+            <div id="editor-ui" class="hidden">
+              
+              <div class="timeline-container" id="timeline">
+                <div class="storyboard-wrapper">
+                  <div id="framesContainer" class="frames"></div>
+                </div>
+
+                <div class="timeline-track-bg"></div>
+                <div class="timeline-mask left"></div>
+                <div class="timeline-mask right"></div>
+                <div class="timeline-range-highlight"></div>
+                <div id="playheadLine" class="timeline-playhead"></div>
+                
+                <input type="range" id="startRange" class="timeline-input start-handle">
+                <input type="range" id="endRange" class="timeline-input end-handle">
+                <input type="range" id="playhead" class="timeline-input playhead-handle">
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center mb-4 text-monospace">
+                <div class="d-flex gap-4">
+                  <div class="small">
+                    <span class="text-secondary">INÍCIO:</span>
+                    <span id="startDisplay" class="ms-1">00:00:00</span>
+                  </div>
+                  <div class="small">
+                    <span class="text-secondary">FIM:</span>
+                    <span id="endDisplay" class="ms-1">00:00:00</span>
+                  </div>
+                </div>
+                <div class="small">
+                  <span class="text-secondary">DURAÇÃO:</span>
+                  <span id="selectedDuration" class="ms-1 text-info">0.0s</span>
+                </div>
+              </div>
+
+              <div class="row g-3 align-items-center border-top border-secondary pt-4">
+                <div class="col-auto">
+                  <button id="play" class="btn btn-light btn-sm px-3">PLAY</button>
+                  <button id="pause" class="btn btn-outline-light btn-sm px-3 ms-2">PAUSE</button>
+                </div>
+                <div class="col-3">
+                  <input type="range" id="volume" class="form-range form-range-sm" min="0" max="1" step="0.01" value="1">
+                </div>
+                <div class="col-auto ms-auto">
+                  <button id="btn" class="btn btn-primary btn-sm px-4 fw-bold">
+                    EXPORTAR CORTE
+                  </button>
+                </div>
+              </div>
+
+            </div> </div>
+        </div>
+      </div>
+    </div> 
+        </div>
+
+        <footer class="social-footer">
+            <hr class="border-secondary opacity-25">
+            <p class="mb-2">Desenvolvido por <strong>Murilo D.</strong></p>
+            <div class="social-links">
+                <a href="https://murilod.dev/" target="_blank" class="link-button">Portfólio</a>
+                <a href="https://www.linkedin.com/in/murilo-dias-dev/" target="_blank" class="link-button">LinkedIn</a>
+                <a href="https://github.com/self1027" target="_blank" class="link-button">GitHub</a>
+            </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./renderer.js"></script>
+</body>
+</html>

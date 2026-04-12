@@ -1,0 +1,184 @@
+:root {
+  --bg-dark: #050505;
+  --accent: #2ecc71;
+  --playhead: #f1c40f;
+  --track: #1a1a1a;
+  --mask: rgba(0, 0, 0, 0.75);
+}
+
+body { 
+  background: var(--bg-dark); 
+  font-family: 'Inter', -apple-system, sans-serif; 
+  letter-spacing: -0.02em;
+}
+
+.hidden { display: none !important; }
+
+.timeline-container {
+  --start: 0%;
+  --end: 100%;
+  position: relative;
+  width: 100%;
+  height: 60px;
+  background: #000;
+  margin-bottom: 20px;
+  border: 1px solid #222;
+  overflow: hidden;
+}
+
+.storyboard-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.frames {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  background: #000;
+}
+
+.frame-thumb {
+  height: 60px;
+  width: 60px;
+  object-fit: cover;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.timeline-track-bg { 
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0; 
+  background: transparent; 
+  z-index: 1; 
+}
+
+.timeline-mask { 
+  position: absolute;
+  top: 0; bottom: 0; 
+  background: var(--mask); 
+  z-index: 10; 
+}
+
+.timeline-mask.left {
+  left: 0;
+  width: var(--start);
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.timeline-mask.right {
+  left: var(--end);
+  right: 0;
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+.timeline-range-highlight { 
+  position: absolute;
+  top: 0; bottom: 0; 
+  left: var(--start);
+  width: calc(var(--end) - var(--start));
+  background: rgba(46, 204, 113, 0.1); 
+  border-left: 2px solid var(--accent); 
+  border-right: 2px solid var(--accent); 
+  z-index: 5; 
+}
+
+.timeline-playhead { 
+  position: absolute;
+  top: 0; bottom: 0; 
+  width: 2px; 
+  background: var(--playhead); 
+  z-index: 100; 
+  box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.timeline-input {
+  position: absolute;
+  width: 100%;
+  left: 0; top: 0; bottom: 0;
+  appearance: none;
+  background: transparent;
+  margin: 0;
+  pointer-events: none;
+}
+
+.playhead-handle { z-index: 40; }
+.start-handle, .end-handle { z-index: 30; }
+
+.timeline-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  appearance: none;
+  cursor: ew-resize;
+}
+
+.start-handle::-webkit-slider-thumb, 
+.end-handle::-webkit-slider-thumb {
+  width: 4px;
+  height: 60px;
+  background: var(--accent);
+}
+
+.playhead-handle::-webkit-slider-thumb {
+  width: 16px;
+  height: 60px;
+  background: transparent;
+}
+
+.text-monospace { font-family: ui-monospace, 'Cascadia Code', monospace; }
+.tracking-wider { letter-spacing: 0.1em; }
+
+/* Estilos do Footer Brutalista */
+.social-footer {
+    margin-top: 2rem;
+    padding-bottom: 2rem;
+    text-align: center;
+}
+
+.social-footer p {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+}
+
+.social-footer strong {
+    color: #fff;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.link-button {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #666;
+    border: 1px solid #333;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    background: transparent;
+    font-weight: 600;
+}
+
+.link-button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(46, 204, 113, 0.05);
+}
+
+/* Ajuste fino para a animação do playhead */
+.timeline-playhead {
+    will-change: left;
+}
