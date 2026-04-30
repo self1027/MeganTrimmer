@@ -4,8 +4,28 @@ declare global {
   interface Window {
     api: {
       selectVideo: () => Promise<string | null>;
-      trimVideo: (options: { input: string; output: string; start: string; duration: string }) => Promise<void>;
+      trimVideo: (options: {
+        input: string;
+        output: string;
+        start: string;
+        duration: string;
+        format?: string;
+        resolution?: string;
+        frameRate?: string;
+        formatType?: string;
+      }) => Promise<void>;
       showInFolder: (path: string) => Promise<void>;
+      getExportOptions: () => Promise<{
+        format: { label: string; value: string; type: string }[];
+        resolution: { label: string; value: string }[];
+        frameRate: { label: string; value: string }[];
+      }>;
+      getVideoInfo: (filePath: string) => Promise<{
+        width: number;
+        height: number;
+        duration: number;
+        frameRate: number;
+      } | null>;
     };
   }
 }
@@ -15,7 +35,12 @@ const btnSelect = document.getElementById('select') as HTMLButtonElement | null;
 const btnExport = document.getElementById('btn') as HTMLButtonElement | null;
 const btnPlay = document.getElementById('play') as HTMLButtonElement | null;
 const btnPause = document.getElementById('pause') as HTMLButtonElement | null;
+const muteBtn = document.getElementById('muteBtn') as HTMLButtonElement | null;
 const volumeSlider = document.getElementById('volume') as HTMLInputElement | null;
+
+const formatSelect = document.getElementById('formatSelect') as HTMLSelectElement | null;
+const resolutionSelect = document.getElementById('resolutionSelect') as HTMLSelectElement | null;
+const frameRateSelect = document.getElementById('frameRateSelect') as HTMLSelectElement | null;
 
 const startRange = document.getElementById('startRange') as HTMLInputElement | null;
 const endRange = document.getElementById('endRange') as HTMLInputElement | null;
@@ -31,8 +56,15 @@ const framesContainer = document.getElementById('framesContainer') as HTMLDivEle
 let selectedPath: string | null = null;
 let duration: number = 0;
 let rafId: number | null = null;
+let scrubAnimationFrame: number | null = null;
 let resizeTimeout: ReturnType<typeof setTimeout>;
 const MIN_GAP = 0.1;
+
+// Store full lists & original video fps
+let originalResolutions: { label: string; value: string }[] = [];
+let originalFrameRates: { label: string; value: string }[] = [];
+let formatOptions: { label: string; value: string; type: string }[] = [];
+let originalFps: number = 0;   // real fps of loaded video
 
 function formatTime(seconds: number): string {
   if (isNaN(seconds)) return "00:00:00";
@@ -96,6 +128,23 @@ function stopPlaybackLoop() {
     rafId = null;
   }
 }
+
+function updateMuteIcon() {
+  if (muteBtn) {
+    muteBtn.textContent = video?.muted ? '🔇' : '🔊';
+  }
+}
+
+muteBtn?.addEventListener('click', () => {
+  if (video) {
+    video.muted = !video.muted;
+    updateMuteIcon();
+  }
+});
+
+video?.addEventListener('loadedmetadata', () => {
+  updateMuteIcon();
+});
 
 timeline?.addEventListener('mousedown', (e) => {
   if ((e.target as HTMLElement).classList.contains('timeline-input')) return;
@@ -187,7 +236,87 @@ window.addEventListener('resize', () => {
   }
 });
 
-video?.addEventListener('loadedmetadata', () => {
+/** Helper to fill a select element */
+function fillSelect(select: HTMLSelectElement, items: { label: string; value: string }[]) {
+  select.innerHTML = '';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.value;
+    opt.textContent = item.label;
+    select.appendChild(opt);
+  });
+}
+
+/** Filter resolution dropdown based on original video dimensions */
+function filterResolutions(origW: number, origH: number) {
+  if (!resolutionSelect || !originalResolutions.length) return;
+  if (origW === 0 || origH === 0) {
+    fillSelect(resolutionSelect, originalResolutions);
+    return;
+  }
+  const filtered = originalResolutions.filter(item => {
+    if (item.value === 'original') return true;
+    const [w, h] = item.value.split(':').map(Number);
+    return w <= origW && h <= origH;
+  });
+  fillSelect(resolutionSelect, filtered);
+}
+
+/** Filter frame rate dropdown based on original video fps */
+function filterFrameRates(fps: number) {
+  if (!frameRateSelect || !originalFrameRates.length) return;
+  if (fps <= 0) {
+    fillSelect(frameRateSelect, originalFrameRates);
+    return;
+  }
+  const filtered = originalFrameRates.filter(item => {
+    if (item.value === 'original') return true;
+    const targetFps = parseFloat(item.value);
+    return targetFps <= fps;
+  });
+  fillSelect(frameRateSelect, filtered);
+}
+
+/** Toggle visibility of video‑only controls (resolution & fps) */
+function updateVideoOptionsVisibility() {
+  const selectedFormat = formatSelect?.value ?? 'original';
+  const selectedOpt = formatOptions.find(f => f.value === selectedFormat);
+  const isAudio = selectedOpt?.type === 'audio';
+
+  const resLabel = document.querySelector('label[for="resolutionSelect"]') as HTMLElement | null;
+  if (resLabel) resLabel.style.display = isAudio ? 'none' : '';
+  if (resolutionSelect) resolutionSelect.style.display = isAudio ? 'none' : '';
+
+  const fpsLabel = document.querySelector('label[for="frameRateSelect"]') as HTMLElement | null;
+  if (fpsLabel) fpsLabel.style.display = isAudio ? 'none' : '';
+  if (frameRateSelect) frameRateSelect.style.display = isAudio ? 'none' : '';
+}
+
+formatSelect?.addEventListener('change', updateVideoOptionsVisibility);
+
+// ---------- Populate dropdowns with export options ----------
+async function populateExportOptions() {
+  const options = await window.api.getExportOptions();
+  if (!options) return;
+
+  formatOptions = options.format;
+  originalResolutions = options.resolution;
+  originalFrameRates = options.frameRate;
+
+  fillSelect(formatSelect!, options.format);
+  fillSelect(resolutionSelect!, options.resolution);
+  fillSelect(frameRateSelect!, options.frameRate);
+
+  updateVideoOptionsVisibility();
+  // Filter with current video info if already available
+  if (video && video.videoWidth && originalFps > 0) {
+    filterResolutions(video.videoWidth, video.videoHeight);
+    filterFrameRates(originalFps);
+  }
+}
+
+// When video metadata loads, also get full video info (fps) and apply filters
+video?.addEventListener('loadedmetadata', async () => {
   duration = video.duration;
   [startRange, endRange, playhead].forEach(s => { 
     if(s) { s.max = duration.toString(); s.step = "0.01"; }
@@ -196,6 +325,22 @@ video?.addEventListener('loadedmetadata', () => {
   if(endRange) endRange.value = duration.toString();
   editorUI?.classList.remove('hidden');
   updateTimelineUI();
+  updateMuteIcon();
+
+  // Only attempt to get info if we have a file path
+  if (selectedPath) {
+    const info = await window.api.getVideoInfo(selectedPath);
+    if (info) {
+      originalFps = info.frameRate;
+      filterResolutions(info.width, info.height);
+      filterFrameRates(info.frameRate);
+    } else {
+      // Fallback: still filter resolutions with videoWidth/Height
+      filterResolutions(video.videoWidth, video.videoHeight);
+      // No fps filtering possible without info
+    }
+  }
+
   setTimeout(() => { generateThumbnails(); }, 50);
 });
 
@@ -205,14 +350,22 @@ video?.addEventListener('timeupdate', () => {
 
 startRange?.addEventListener('input', () => {
   const start = parseFloat(startRange.value);
-  const end = parseFloat(endRange!.value);
+  const end = parseFloat(endRange?.value ?? '0');
   if (start >= end - MIN_GAP) startRange.value = (end - MIN_GAP).toString();
   
-  if (video && video.currentTime < parseFloat(startRange.value)) {
-    video.currentTime = parseFloat(startRange.value);
-  }
-  
   updateTimelineUI();
+  
+  if (video) {
+    if (scrubAnimationFrame !== null) {
+      cancelAnimationFrame(scrubAnimationFrame);
+    }
+    scrubAnimationFrame = requestAnimationFrame(() => {
+      video.currentTime = parseFloat(startRange.value);
+      if (playheadLine && duration) {
+        playheadLine.style.left = `${(video.currentTime / duration) * 100}%`;
+      }
+    });
+  }
 });
 
 endRange?.addEventListener('input', () => {
@@ -247,19 +400,79 @@ window.addEventListener('DOMContentLoaded', () => {
     selectedPath = externalFile;
     video.src = `file:///${externalFile.replace(/\\/g, '/')}`;
   }
+
+  populateExportOptions();
 });
 
 btnExport?.addEventListener('click', async () => {
-  if (!selectedPath) return;
-  const start = parseFloat(startRange!.value);
-  const end = parseFloat(endRange!.value);
+  if (!selectedPath || btnExport.disabled) return;
+
+  const progressTrack = document.querySelector('.progress-track') as HTMLElement | null;
+  const progressFill = document.querySelector('.progress-fill') as HTMLElement | null;
+  const sInput = document.querySelector('#startRange') as HTMLInputElement | null;
+  const eInput = document.querySelector('#endRange') as HTMLInputElement | null;
+
+  if (!sInput || !eInput) return;
+
+  const originalText = btnExport.textContent || 'EXPORTAR CORTE';
+  btnExport.disabled = true;
+  btnExport.classList.add('btn-processing');
+  btnExport.textContent = '⚙ PROCESSANDO...';
+  
+  if (progressTrack) progressTrack.style.display = 'block';
+  if (progressFill) {
+    progressFill.style.width = '0%';
+    progressFill.style.background = 'linear-gradient(90deg, #007bff, #00c6ff)';
+  }
+
+  const start = parseFloat(sInput.value);
+  const end = parseFloat(eInput.value);
   const rawDuration = end - start;
-  const output = selectedPath.replace(/(\.[\w\d]+)$/i, '_trimmed$1');
-  await window.api.trimVideo({ 
-    input: selectedPath, 
-    output, 
-    start: start.toFixed(6), 
-    duration: rawDuration.toFixed(6) 
-  });
-  await window.api.showInFolder(output);
+
+  const format = (document.querySelector('#formatSelect') as HTMLSelectElement)?.value ?? 'original';
+  const resolution = (document.querySelector('#resolutionSelect') as HTMLSelectElement)?.value ?? 'original';
+  const frameRate = (document.querySelector('#frameRateSelect') as HTMLSelectElement)?.value ?? 'original';
+
+  const output = format !== 'original' 
+    ? selectedPath.replace(/(\.[\w\d]+)$/i, `_trimmed.${format}`)
+    : selectedPath.replace(/(\.[\w\d]+)$/i, '_trimmed$1');
+
+  try {
+    await window.api.trimVideo({ 
+      input: selectedPath, 
+      output, 
+      start: start.toFixed(6), 
+      duration: rawDuration.toFixed(6),
+      format,
+      resolution,
+      frameRate,
+    });
+
+    if (progressFill) progressFill.style.width = '100%';
+    btnExport.textContent = '✔ CONCLUÍDO';
+    btnExport.classList.remove('btn-processing');
+    
+    await window.api.showInFolder(output);
+
+    setTimeout(() => {
+      btnExport.textContent = originalText;
+      btnExport.disabled = false;
+      if (progressTrack) progressTrack.style.display = 'none';
+    }, 2000);
+
+  } catch (err) {
+    console.error('Export error:', err);
+    btnExport.textContent = '❌ ERRO';
+    btnExport.classList.remove('btn-processing');
+    if (progressFill) {
+      progressFill.style.width = '100%';
+      progressFill.style.background = '#ff4d4d';
+    }
+    
+    setTimeout(() => {
+      btnExport.textContent = originalText;
+      btnExport.disabled = false;
+      if (progressTrack) progressTrack.style.display = 'none';
+    }, 3000);
+  }
 });
