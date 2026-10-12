@@ -444,3 +444,91 @@ body {
   animation: pulse 1.5s infinite ease-in-out;
   cursor: wait !important;
 }
+
+/* ========== SETTINGS (pasta de clipes) ========== */
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-toggle {
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  background: #111;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.settings-toggle:hover,
+.settings-toggle.active {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.settings-panel label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+
+.settings-path {
+  margin: 0;
+  padding: 8px 10px;
+  background: #0a0a0a;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ccc;
+  font-family: monospace;
+  word-break: break-all;
+  text-transform: none; /* preservar case real do caminho */
+}
+
+.settings-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.settings-btn:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.settings-btn.secondary {
+  border-color: var(--border);
+  color: #888;
+}
+
+.settings-btn.secondary:hover {
+  background: #222;
+  color: #fff;
+  border-color: var(--border);
+}

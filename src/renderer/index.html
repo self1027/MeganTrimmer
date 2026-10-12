@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: file:;">
-  <title>NoBSTrimmer</title>
+  <title>MeganTrimmer</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -20,8 +20,7 @@
 
       <div class="playback-info">
         <div class="controls-group">
-          <button class="control-btn" id="play" title="Play">▶️</button>
-          <button class="control-btn" id="pause" title="Pause">⏸️</button>
+          <button class="control-btn" id="playPause" title="Play">▶️</button>
           <button class="control-btn" id="muteBtn" title="Mute/Unmute">🔊</button>
           <input type="range" id="volume" class="volume-slider" min="0" max="1" step="0.01" value="1">
         </div>
@@ -52,6 +51,17 @@
 
     <!-- ========== RIGHT SIDEBAR ========== -->
     <div class="right-sidebar">
+      <div class="settings-group">
+        <button id="settingsToggle" class="settings-toggle" title="Configurações">⚙</button>
+
+        <div id="settingsPanel" class="settings-panel hidden">
+          <label>Pasta de clipes</label>
+          <p id="outputFolderText" class="settings-path">Padrão (Videos/MeganTrimmer)</p>
+          <button id="pickFolderBtn" class="settings-btn">ESCOLHER PASTA</button>
+          <button id="resetFolderBtn" class="settings-btn secondary">RESTAURAR PADRÃO</button>
+        </div>
+      </div>
+
       <div class="dropdown-group">
         <label for="formatSelect">Formato</label>
         <select id="formatSelect" class="styled-dropdown"></select>

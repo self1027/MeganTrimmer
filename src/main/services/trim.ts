@@ -1,5 +1,7 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
+import { HARDWARE_ENCODER_PRIORITIES, STREAM_COPY_CONTAINERS } from '../../shared/constants.js';
+import type { TrimVideoOptions } from '../../shared/types.js';
 
 const getCleanPath = (): string => {
   if (!ffmpegPath) return '';
@@ -21,8 +23,7 @@ const getBestEncoder = (): Promise<string> => {
       if (err || !encoders) return resolve('libx264');
 
       // Priority: AMD -> NVIDIA -> Intel -> Software
-      const priorities = ['h264_amf', 'h264_nvenc', 'h264_qsv'];
-      for (const encoder of priorities) {
+      for (const encoder of HARDWARE_ENCODER_PRIORITIES) {
         if (encoders[encoder]) {
           supportedHardwareEncoder = encoder;
           return resolve(encoder);
@@ -35,19 +36,12 @@ const getBestEncoder = (): Promise<string> => {
   });
 };
 
-const STREAM_COPY_CONTAINERS = new Set(['mp4', 'mkv', 'mov']);
-
 export async function trimVideo(
   input: string,
   output: string,
   start: string,
   duration: string,
-  options?: {
-    format?: string;
-    resolution?: string;
-    frameRate?: string;
-    formatType?: 'video' | 'audio';
-  }
+  options?: TrimVideoOptions
 ): Promise<void> {
   // Detect encoder before building the command
   const vCodec = await getBestEncoder();
