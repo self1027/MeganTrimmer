@@ -1,14 +1,19 @@
 node_modules/
 
 dist/
-
 release/
+dist_electron/
+*.nsis
+*.msi.tmp
+builder-debug.yml
+builder-effective-config.yaml
 
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-builder-debug.yml
-builder-effective-config.yaml
+pnpm-debug.log*
+ffmpeg-*.log
 
 *.mp4
 *.mkv
@@ -16,7 +21,17 @@ builder-effective-config.yaml
 *.avi
 
 .vscode/
+.idea/
 .DS_Store
 Thumbs.db
 
-dist_electron/
+*.tmp
+*.bak
+*.orig
+*.rej
+.cache/
+.eslintcache
+coverage/
+
+.env
+.env.*
