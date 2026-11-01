@@ -41,3 +41,9 @@
 - Validação de VM: não executar instaladores sobre a instalação pessoal deste computador.
 - Controlador e preferência: npm test passou com 52 testes, incluindo download manual, troca de modo após download, falhas e concorrência.
 - Ciclo de vida: 56 testes Node e smoke Electron de edição/atualização passaram; o ambiente da sessão define ELECTRON_RUN_AS_NODE=1, removido somente do processo de teste para iniciar a interface real.
+- Build 1.3.0: Setup, portátil, blockmap e latest.yml gerados; assinatura conferida como NotSigned, conforme a escolha de distribuir sem certificado.
+- Publicação: validadores e CI implementados; 63 testes Node passaram após a correção da revisão; actionlint 1.7.12 não apontou erros nos workflows.
+- Feed HTTP local: electron-updater real baixou/verificou o instalador e rejeitou SHA-512 incorreto, sem instalar nem usar o cache de produção.
+- Pacote: seis formatos exportados e decodificados com PATH vazio, usando FFmpeg/FFprobe incluídos no asar.
+- Ruling: os testes de substituição física, MSI e UAC ficam para Windows descartável; Windows Sandbox não está disponível neste host e instalar aqui alteraria o ambiente pessoal.
+- Revisão independente: falha do instalador emitida por evento podia deixar instalação/fechamento liberados; reproduzida em dois testes e corrigida, com regressão adicional no Electron para manter a proteção de alterações pendentes.

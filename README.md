@@ -46,7 +46,11 @@ O processamento acontece no seu computador, com o FFmpeg já incluído no aplica
 
 ## Como usar
 
-Baixe a versão para Windows na página de [Releases](https://github.com/self1027/megan-trimmer/releases). Escolha **Portable.exe** para abrir sem instalar ou **Setup.msi** para instalar no computador.
+Baixe a versão para Windows na página de [Releases](https://github.com/self1027/megan-trimmer/releases). Escolha **Setup.exe** para instalar com atualizações pelo aplicativo ou **Portable.exe** para abrir sem instalar.
+
+O aplicativo instalado avisa quando há uma versão nova e pede confirmação para baixar e reiniciar. Em **Atualizações**, você pode ativar **Atualização silenciosa** para baixar automaticamente e instalar ao fechar. Exportações em andamento impedem o reinício, e alterações não exportadas exigem confirmação antes de fechar.
+
+Se já usa uma versão antiga, execute o novo **Setup.exe** uma vez: ele reconhece a instalação anterior, inclusive a feita pelo MSI, e mantém suas configurações. No portátil, feche o aplicativo e substitua o arquivo manualmente.
 
 1. Clique em **Abrir arquivo** ou arraste um vídeo para o app.
 2. Ajuste as marcas de início e fim para selecionar o trecho.
@@ -69,7 +73,9 @@ npm install
 npm run dev
 ```
 
-Para executar os testes, use `npm test`. Para gerar a versão portátil para Windows, use `npm run dist:portable`.
+Para executar os testes, use `npm test` e `npm run test:ui`. `npm run dist` gera o instalador EXE, o portátil e o manifesto de atualização. Depois do build, `npm run test:package` confere os binários incluídos e `npm run test:update-feed` testa download e integridade em um servidor local, sem instalar nada.
+
+A publicação acontece no GitHub Actions ao enviar uma tag `vX.Y.Z`. Veja o [procedimento de release](docs/releases.md), incluindo a validação inicial de instalação e migração.
 
 </details>
 
