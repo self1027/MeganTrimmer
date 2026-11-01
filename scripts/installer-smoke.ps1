@@ -102,6 +102,7 @@ try {
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'decline', $version)
   Run $setup @('/S') @(2)
   Require (-not $appProcess.HasExited) 'Installer terminated the running app.'
+  Invoke-NodeCheck @('scripts/native-ui.cjs', 'quit', $version)
   StopApps
   AssertInstall 'user' $version $userFolder
   Pass 'declining the update permits normal exit without installing; running-app upgrade is refused without termination'
@@ -130,8 +131,10 @@ try {
   $legacyMsi = Join-Path $work 'legacy.msi'
   Invoke-WebRequest -Uri 'https://github.com/self1027/megan-trimmer/releases/download/v1.2.0/MeganTrimmer-Setup.msi' -OutFile $legacyMsi
   Require ((Get-FileHash -LiteralPath $legacyMsi -Algorithm SHA256).Hash -eq '4EA2A6B0118C2D9EF06805AD02120AEC46F1538757AA03D560CF582818DAC34C') 'Published legacy MSI checksum mismatch.'
-  Run 'msiexec.exe' @('/i', $legacyMsi, '/qn', '/norestart', '/L*V', (Join-Path $work 'legacy-msi.log')) @(0,3010)
+  . (Join-Path $PSScriptRoot 'msi-wizard.ps1')
+  Invoke-LegacyMsi $legacyMsi (Join-Path $work 'published MSI custom path') (Join-Path $work 'legacy-msi.log')
   $machineFolder = (Get-ItemProperty -LiteralPath "HKLM:\Software\$guid").InstallLocation
+  Require ($machineFolder -eq (Join-Path $work 'published MSI custom path')) 'The MSI wizard did not retain its chosen custom directory.'
   AssertInstall 'machine' '1.2.0' $machineFolder
   Run $setup @('/S')
   AssertInstall 'machine' $version $machineFolder
@@ -156,6 +159,7 @@ try {
   Require (-not $appProcess.HasExited) 'Installer terminated an export.'
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'assert-export', $version)
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'finish-export', $version)
+  Invoke-NodeCheck @('scripts/native-ui.cjs', 'quit', $version)
   StopApps
   AssertInstall 'machine' $version $customFolder
   Pass 'machine-wide installer refuses replacement during a real video export without terminating the app'
@@ -163,6 +167,7 @@ try {
 
   $appProcess = StartApp $portable
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'portable', $version)
+  Invoke-NodeCheck @('scripts/native-ui.cjs', 'quit', $version)
   StopApps
   Require (-not ((Test-Path -LiteralPath $userKey) -or (Test-Path -LiteralPath $machineKey))) 'Portable created an installation entry.'
   Pass 'portable remains portable and does not enable the NSIS updater'

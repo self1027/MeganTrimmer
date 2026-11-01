@@ -53,6 +53,8 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
     assert.equal(state.currentVersion, expectedVersion);
     if (mode === 'portable') {
       assert.equal(state.status, 'unsupported');
+    } else if (mode === 'quit') {
+      await main.evaluate("setTimeout(() => process.getBuiltinModule('node:module').createRequire(process.resourcesPath + '/app.asar/package.json')('electron').app.quit(), 150); undefined");
     } else if (mode === 'decline' || mode === 'update') {
       for (let i = 0; i < 100; i++) {
         if ((await renderer.evaluate('window.api.getUpdateState()')).status !== 'checking') break;
