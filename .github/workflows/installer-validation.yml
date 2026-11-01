@@ -1,0 +1,44 @@
+name: Native installer validation
+
+on:
+  push:
+    branches: [codex/reliable-export-polish]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:ui
+      - run: npm run dist
+      - name: Build a next-version installer without changing the repository version
+        shell: pwsh
+        run: |
+          $next = node -p "const parts=require('./package.json').version.split('.'); parts[2]=Number(parts[2])+1; parts.join('.')"
+          npx electron-builder --win nsis --x64 --publish never "-c.extraMetadata.version=$next" -c.directories.output=.cache/native-next
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate real installation, migration, replacement and portable behavior
+        shell: pwsh
+        run: ./scripts/installer-smoke.ps1
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: native-installer-evidence
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            .cache/native-validation/*.json
+            .cache/native-validation/*.log

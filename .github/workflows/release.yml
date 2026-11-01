@@ -41,6 +41,15 @@ jobs:
       - run: node scripts/release.cjs verify-artifacts
       - run: npm run test:update-feed
       - run: npm run test:package
+      - name: Build next version for native update validation
+        shell: pwsh
+        run: |
+          $next = node -p "const parts=require('./package.json').version.split('.'); parts[2]=Number(parts[2])+1; parts.join('.')"
+          npx electron-builder --win nsis --x64 --publish never "-c.extraMetadata.version=$next" -c.directories.output=.cache/native-next
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Gate publication on native Windows installer tests
+        shell: pwsh
+        run: ./scripts/installer-smoke.ps1
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: windows-release
