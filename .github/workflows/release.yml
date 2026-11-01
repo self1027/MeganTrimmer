@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require the tagged commit to belong to main
+        shell: pwsh
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) { throw 'Merge the release commit into main before tagging.' }
+      - run: npm ci
+      - name: Validate stable tag and package versions
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release.cjs verify-version
+      - run: npm test
+      - run: npm run test:ui
+      - run: npm run dist
+      - run: node scripts/release.cjs verify-artifacts
+      - run: npm run test:update-feed
+      - run: npm run test:package
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: windows-release
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            release/MeganTrimmer-${{ steps.version.outputs.version }}-Setup.exe
+            release/MeganTrimmer-${{ steps.version.outputs.version }}-Setup.exe.blockmap
+            release/MeganTrimmer-${{ steps.version.outputs.version }}-Portable.exe
+            release/latest.yml
+
+  publish:
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: windows-release
+          path: release
+      - name: Upload draft assets, verify and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release.cjs publish
