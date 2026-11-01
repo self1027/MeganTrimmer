@@ -1,6 +1,13 @@
 import type { ExportOptionItem } from '../../shared/types.js';
+import type { EditSnapshot } from '../../shared/edit-session.js';
 
 export const state = {
+  exporting: false,
+  loading: false,
+  ready: false,
+  loadGeneration: 0,
+  thumbnailGeneration: 0,
+  savedEdit: null as EditSnapshot | null,
   selectedPath: null as string | null,
   duration: 0,
   rafId: null as number | null,
