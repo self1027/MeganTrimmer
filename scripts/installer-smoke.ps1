@@ -45,10 +45,21 @@ function AssertInstall([string]$Scope, [string]$ExpectedVersion, [string]$Folder
   $exe = Join-Path $Folder 'MeganTrimmer.exe'
   $fileVersion = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
   Require ($fileVersion -eq $ExpectedVersion) "Installed executable version is $fileVersion, expected $ExpectedVersion."
-  $entries = @(foreach ($registry in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall')) {
-    Get-ChildItem -LiteralPath $registry | Get-ItemProperty | Where-Object DisplayName -EQ 'MeganTrimmer'
+  $entries = @(foreach ($registry in @(
+    'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall',
+    'HKCU:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+    'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall',
+    'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+  )) {
+    if (-not (Test-Path -LiteralPath $registry)) { continue }
+    Get-ChildItem -LiteralPath $registry | ForEach-Object {
+      $item = Get-ItemProperty -LiteralPath $_.PSPath
+      $name = [string]$item.DisplayName
+      if ($_.PSChildName -eq $guid -or $name -eq 'MeganTrimmer' -or $name -like 'MeganTrimmer *') { $item }
+    }
   })
-  Require ($entries.Count -eq 1) 'There must be exactly one installed-product entry.'
+  $described = @($entries | ForEach-Object { "$($_.PSChildName)=$($_.DisplayName) $($_.DisplayVersion)" }) -join ', '
+  Require ($entries.Count -eq 1) "There must be exactly one installed-product entry. Found: $described"
   $hive = if ($Scope -eq 'user') { 'HKCU' } else { 'HKLM' }
   $command = (Get-ItemProperty -LiteralPath "${hive}:\Software\Classes\MeganTrimmer.mp4\shell\open\command").'(default)'
   Require ($command -like "*$exe*") 'Open-with association points to the wrong executable.'
