@@ -51,6 +51,15 @@ function AssertInstall([string]$Scope, [string]$ExpectedVersion, [string]$Folder
   $hive = if ($Scope -eq 'user') { 'HKCU' } else { 'HKLM' }
   $command = (Get-ItemProperty -LiteralPath "${hive}:\Software\Classes\MeganTrimmer.mp4\shell\open\command").'(default)'
   Require ($command -like "*$exe*") 'Open-with association points to the wrong executable.'
+  $shell = New-Object -ComObject WScript.Shell
+  foreach ($locations in @(@('DesktopDirectory','CommonDesktopDirectory'), @('Programs','CommonPrograms'))) {
+    $links = @(foreach ($location in $locations) {
+      $link = Join-Path ([Environment]::GetFolderPath($location)) 'MeganTrimmer.lnk'
+      if (Test-Path -LiteralPath $link) { $link }
+    })
+    Require ($links.Count -eq 1) 'Desktop or Start Menu contains missing/duplicate shortcuts.'
+    Require ($shell.CreateShortcut($links[0]).TargetPath -eq $exe) 'Shortcut targets the wrong executable.'
+  }
   Require ((Get-Content -LiteralPath $settings -Raw | ConvertFrom-Json).outputFolder -eq $clips) 'Upgrade lost the output-folder preference.'
   Require ((Get-Content -LiteralPath (Join-Path $clips 'keep.mp4') -Raw).Trim() -eq 'preserve this clip') 'Upgrade changed a saved clip.'
 }

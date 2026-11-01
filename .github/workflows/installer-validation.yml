@@ -24,12 +24,7 @@ jobs:
       - run: npm test
       - run: npm run test:ui
       - run: npm run dist
-      - name: Build a next-version installer without changing the repository version
-        shell: pwsh
-        run: |
-          $next = node -p "const parts=require('./package.json').version.split('.'); parts[2]=Number(parts[2])+1; parts.join('.')"
-          npx electron-builder --win nsis --x64 --publish never "-c.extraMetadata.version=$next" -c.directories.output=.cache/native-next
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run: node scripts/build-next.cjs
       - name: Validate real installation, migration, replacement and portable behavior
         shell: pwsh
         run: ./scripts/installer-smoke.ps1
