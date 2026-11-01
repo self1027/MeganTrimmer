@@ -3,7 +3,7 @@ import type { AppSettings } from '../../shared/types.js';
 
 const { settingsToggle, settingsPanel, outputFolderText, pickFolderBtn, resetFolderBtn } = els;
 
-const DEFAULT_FOLDER_LABEL = 'Padrão (Videos/MeganTrimmer)';
+const DEFAULT_FOLDER_LABEL = 'Padrão (Vídeos/MeganTrimmer)';
 
 function loadSettingsIntoPanel(settings: AppSettings): void {
   if (outputFolderText) {
@@ -26,10 +26,12 @@ export function setupSettings(): void {
     settingsPanel?.classList.toggle('hidden');
     const isOpen = !!settingsPanel && !settingsPanel.classList.contains('hidden');
     settingsToggle.classList.toggle('active', isOpen);
+    settingsToggle.setAttribute('aria-expanded', String(isOpen));
 
     if (isOpen) loadSettingsIntoPanel(await window.api.getSettings());
   });
 
   pickFolderBtn?.addEventListener('click', pickOutputFolder);
   resetFolderBtn?.addEventListener('click', restoreDefault);
+  window.api.getSettings().then(loadSettingsIntoPanel).catch(console.error);
 }

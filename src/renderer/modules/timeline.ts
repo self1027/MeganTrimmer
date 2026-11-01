@@ -61,6 +61,7 @@ export function stopPlaybackLoop() {
 
 export function setupTimeline(): void {
   timeline?.addEventListener('mousedown', (e) => {
+    if (!state.ready || state.exporting || state.loading) return;
     if ((e.target as HTMLElement).classList.contains('timeline-input')) return;
     const rect = timeline.getBoundingClientRect();
     const x = e.clientX - rect.left;

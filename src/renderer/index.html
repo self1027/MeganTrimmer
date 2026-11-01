@@ -1,91 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: file:;">
   <title>MeganTrimmer</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="app-wrapper">
-    <!-- ========== LEFT EDITOR ========== -->
-    <div class="left-editor">
-      <div class="top-bar">
-        <button id="select">ABRIR ARQUIVO</button>
-      </div>
-
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7z"/></symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="icon-volume" viewBox="0 0 24 24"><path d="m11 5-6 5H2v4h3l6 5zM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-muted" viewBox="0 0 24 24"><path d="m11 5-6 5H2v4h3l6 5zM16 9l6 6m0-6-6 6"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="m8 8 12 12M8 16 20 4"/></symbol>
+    <symbol id="icon-film" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 8h4m-4 8h4m10-8h4m-4 8h4"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></symbol>
+  </svg>
+  <main class="app-wrapper">
+    <section class="left-editor" aria-label="Editor de vídeo">
+      <header class="top-bar">
+        <div class="file-heading"><span class="eyebrow">Seu vídeo</span><h1 id="fileName">Um bom corte começa aqui.</h1><p id="videoMeta">Abra um vídeo para selecionar o trecho que importa.</p></div>
+        <button id="select" class="button secondary" data-lock-while-busy><svg class="icon"><use href="#icon-plus"/></svg>Abrir arquivo</button>
+      </header>
       <div class="video-player">
-        <video id="preview"></video>
+        <video id="preview" preload="metadata" playsinline aria-label="Prévia do corte"></video>
+        <div id="emptyState" class="empty-state">
+          <span class="empty-icon"><svg class="icon"><use href="#icon-film"/></svg></span>
+          <h2>Arraste seu vídeo para cá</h2><p>Ou use “Abrir arquivo” para começar.</p><span class="format-hint">MP4 · MKV · MOV</span>
+        </div>
       </div>
-
       <div class="playback-info">
         <div class="controls-group">
-          <button class="control-btn" id="playPause" title="Play">▶️</button>
-          <button class="control-btn" id="muteBtn" title="Mute/Unmute">🔊</button>
-          <input type="range" id="volume" class="volume-slider" min="0" max="1" step="0.01" value="1">
+          <button class="control-btn" id="playPause" data-icon="play" data-requires-video disabled aria-label="Reproduzir"><svg class="icon play-icon"><use href="#icon-play"/></svg><svg class="icon pause-icon"><use href="#icon-pause"/></svg></button>
+          <button class="control-btn" id="muteBtn" data-icon="volume" data-requires-video disabled aria-label="Silenciar"><svg class="icon volume-icon"><use href="#icon-volume"/></svg><svg class="icon muted-icon"><use href="#icon-muted"/></svg></button>
+          <input type="range" id="volume" class="volume-slider" min="0" max="1" step="0.01" value="1" data-requires-video disabled aria-label="Volume">
         </div>
+        <span id="dirtyState" class="dirty-state">Nenhum vídeo aberto</span>
       </div>
-
-      <div class="trim-meta">
-        <div>INÍCIO: <strong id="startDisplay">00:00:00</strong></div>
-        <div>DURAÇÃO: <strong id="selectedDuration">0.0S</strong></div>
-        <div>FIM: <strong id="endDisplay">00:00:00</strong></div>
-      </div>
-
-      <div class="timeline-container" id="timeline">
-        <div class="storyboard-wrapper">
-          <div id="framesContainer" class="frames"></div>
+      <section class="trim-section" aria-label="Seleção do corte">
+        <div class="trim-meta">
+          <div><span>Início</span><strong id="startDisplay">00:00:00</strong></div>
+          <div class="duration-meta"><span>Duração do corte</span><strong id="selectedDuration">0.0s</strong></div>
+          <div><span>Fim</span><strong id="endDisplay">00:00:00</strong></div>
         </div>
-        <div class="timeline-track-bg"></div>
-        <div class="timeline-mask left"></div>
-        <div class="timeline-mask right"></div>
-        <div class="timeline-range-highlight"></div>
-        <div id="playheadLine" class="timeline-playhead"></div>
-        <input type="range" id="startRange" class="timeline-input start-handle">
-        <input type="range" id="endRange" class="timeline-input end-handle">
-        <input type="range" id="playhead" class="timeline-input playhead-handle">
-        <div class="scissor start-scissor">✂</div>
-        <div class="scissor end-scissor">✂</div>
-      </div>
-    </div>
-
-    <!-- ========== RIGHT SIDEBAR ========== -->
-    <div class="right-sidebar">
-      <div class="settings-group">
-        <button id="settingsToggle" class="settings-toggle" title="Configurações">⚙</button>
-
-        <div id="settingsPanel" class="settings-panel hidden">
-          <label>Pasta de clipes</label>
-          <p id="outputFolderText" class="settings-path">Padrão (Videos/MeganTrimmer)</p>
-          <button id="pickFolderBtn" class="settings-btn">ESCOLHER PASTA</button>
-          <button id="resetFolderBtn" class="settings-btn secondary">RESTAURAR PADRÃO</button>
+        <div class="timeline-container" id="timeline">
+          <div class="storyboard-wrapper"><div id="framesContainer" class="frames"></div></div>
+          <div class="timeline-mask left"></div><div class="timeline-mask right"></div>
+          <div class="timeline-range-highlight"></div><div id="playheadLine" class="timeline-playhead"></div>
+          <input type="range" id="startRange" class="timeline-input start-handle" data-requires-video disabled aria-label="Início do corte">
+          <input type="range" id="endRange" class="timeline-input end-handle" data-requires-video disabled aria-label="Fim do corte">
+          <input type="range" id="playhead" class="timeline-input playhead-handle" data-requires-video disabled aria-label="Posição de reprodução">
         </div>
-      </div>
-
+        <p class="timeline-hint">Ajuste as marcas de início e fim para escolher seu corte.</p>
+      </section>
+    </section>
+    <aside class="right-sidebar" aria-label="Exportação">
+      <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#icon-scissors"/></svg></span><span>Megan<span class="brand-light">Trimmer</span></span></div>
+      <div class="sidebar-heading"><span class="eyebrow">Do seu jeito</span><h2>Exportar corte</h2><p>Escolha como salvar seu próximo clipe.</p></div>
       <div class="dropdown-group">
-        <label for="formatSelect">Formato</label>
-        <select id="formatSelect" class="styled-dropdown"></select>
-
-        <label for="resolutionSelect">Resolução</label>
-        <select id="resolutionSelect" class="styled-dropdown"></select>
-
-        <label for="frameRateSelect">Frame Rate</label>
-        <select id="frameRateSelect" class="styled-dropdown"></select>
+        <label for="formatSelect">Formato</label><select id="formatSelect" data-requires-video disabled></select>
+        <label for="resolutionSelect">Resolução</label><select id="resolutionSelect" data-requires-video disabled></select>
+        <label for="frameRateSelect">Quadros por segundo</label><select id="frameRateSelect" data-requires-video disabled></select>
       </div>
-
-      <button id="btn" class="btn-orange save-btn">EXPORTAR CORTE</button>
-
-      <div class="footer">
-        <p>DESENVOLVIDO POR <strong>MURILO D.</strong></p>
-        <div class="social-links">
-          <a href="https://murilod.dev/" target="_blank">PORTFÓLIO</a>
-          <a href="https://www.linkedin.com/in/murilo-dias-dev/" target="_blank">LINKEDIN</a>
-          <a href="https://github.com/self1027" target="_blank">GITHUB</a>
+      <div class="settings-group">
+        <div class="destination-heading"><label>Salvar em</label><button id="settingsToggle" class="control-btn" title="Configurar pasta de clipes" aria-label="Configurar pasta de clipes" aria-expanded="false" aria-controls="settingsPanel" data-lock-while-busy><svg class="icon"><use href="#icon-settings"/></svg></button></div>
+        <p id="outputFolderText" class="settings-path">Padrão (Vídeos/MeganTrimmer)</p>
+        <div id="settingsPanel" class="settings-panel hidden">
+          <button id="pickFolderBtn" class="button secondary" data-lock-while-busy>Escolher pasta</button>
+          <button id="resetFolderBtn" class="text-button" data-lock-while-busy>Restaurar padrão</button>
         </div>
       </div>
-    </div>
-  </div>
-
+      <div class="export-actions">
+        <div class="export-feedback">
+        <div id="exportStatus" class="export-status" hidden>
+          <p id="statusMessage" role="status" aria-live="polite" aria-atomic="true"></p>
+          <button id="openExportFolder" class="text-button" hidden>Abrir pasta ↗</button>
+          <details id="statusDetails" hidden><summary>Ver detalhes</summary><textarea id="errorDetails" readonly aria-label="Detalhes da operação"></textarea><button id="copyDetails" class="text-button">Copiar detalhes</button></details>
+        </div>
+        <div id="exportProgress" class="progress-track" role="progressbar" aria-label="Progresso da exportação" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+        <button id="btn" class="button primary save-btn" data-requires-video disabled>Exportar corte</button>
+        <p class="export-hint">Seu arquivo original permanece intacto.</p>
+      </div>
+      <footer class="footer"><span>Feito por Murilo D.</span><a href="https://murilod.dev/" target="_blank" rel="noreferrer">Portfólio ↗</a></footer>
+    </aside>
+  </main>
+  <div class="drop-overlay" aria-hidden="true"><svg class="icon"><use href="#icon-plus"/></svg><strong>Solte para abrir o vídeo</strong><span>MP4, MKV ou MOV · um arquivo de cada vez</span></div>
+  <dialog id="replaceDialog" aria-labelledby="replaceTitle" aria-describedby="replaceDescription">
+    <form method="dialog"><span class="eyebrow">Antes de continuar</span><h2 id="replaceTitle">Guardar este corte?</h2><p id="replaceDescription">Há alterações que ainda não foram exportadas. Escolha o que fazer antes de abrir o próximo vídeo.</p><div class="dialog-actions"><button class="button primary" value="export">Exportar e abrir</button><button class="button secondary" value="discard">Descartar e abrir</button><button class="text-button" value="cancel" autofocus>Cancelar</button></div></form>
+  </dialog>
   <script type="module" src="./renderer.js"></script>
 </body>
 </html>

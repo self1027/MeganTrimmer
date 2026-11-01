@@ -10,7 +10,7 @@ function fillSelect(select: HTMLSelectElement, items: { label: string; value: st
   items.forEach(item => {
     const opt = document.createElement('option');
     opt.value = item.value;
-    opt.textContent = item.label;
+    opt.textContent = item.value === 'original' ? 'Original' : item.label;
     select.appendChild(opt);
   });
 }

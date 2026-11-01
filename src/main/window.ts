@@ -1,6 +1,6 @@
 import { BrowserWindow, shell } from 'electron';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +10,8 @@ const APP_ROOT = path.join(__dirname, '..');
 
 export function createWindow(filePath?: string): BrowserWindow {
   const mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
     minWidth: 900,
     minHeight: 700,
     resizable: true,
@@ -26,7 +28,7 @@ export function createWindow(filePath?: string): BrowserWindow {
   const indexPath = path.join(APP_ROOT, 'renderer', 'index.html');
 
   if (filePath) {
-    const fileUrl = new URL(`file://${indexPath}`);
+    const fileUrl = pathToFileURL(indexPath);
     fileUrl.searchParams.set('externalFile', filePath);
     mainWindow.loadURL(fileUrl.href);
   } else {
