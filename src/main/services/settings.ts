@@ -42,9 +42,11 @@ export function loadSettings(): AppSettings {
 
 function sanitizeSettings(parsed: unknown): AppSettings {
   const outputFolder = (parsed as AppSettings | null | undefined)?.outputFolder;
+  const silentUpdates = (parsed as AppSettings | null | undefined)?.silentUpdates;
   return {
     ...DEFAULT_SETTINGS,
-    ...(typeof outputFolder === 'string' ? { outputFolder } : {})
+    ...(typeof outputFolder === 'string' ? { outputFolder } : {}),
+    ...(typeof silentUpdates === 'boolean' ? { silentUpdates } : {})
   };
 }
 
@@ -64,7 +66,7 @@ export function saveSettings(settings: AppSettings): void {
  * Pasta efetiva de saída: a configurada se existir no disco, senão
  * `Videos/MeganTrimmer` (criada sob demanda). Nunca retorna ''.
  */
-export function resolveOutputFolder(settings: AppSettings): string {
+export function resolveOutputFolder(settings: Pick<AppSettings, 'outputFolder'>): string {
   const configured = settings.outputFolder;
   if (configured && fs.existsSync(configured)) return configured;
 

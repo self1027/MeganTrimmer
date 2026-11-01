@@ -5,7 +5,7 @@ const { settingsToggle, settingsPanel, outputFolderText, pickFolderBtn, resetFol
 
 const DEFAULT_FOLDER_LABEL = 'Padrão (Vídeos/MeganTrimmer)';
 
-function loadSettingsIntoPanel(settings: AppSettings): void {
+function loadSettingsIntoPanel(settings: Pick<AppSettings, 'outputFolder'>): void {
   if (outputFolderText) {
     outputFolderText.textContent = settings.outputFolder || DEFAULT_FOLDER_LABEL;
   }

@@ -1,0 +1,163 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { UpdateService } from './updater.js';
+
+class FakeUpdater extends EventEmitter {
+  autoDownload = true;
+  autoInstallOnAppQuit = true;
+  allowPrerelease = true;
+  allowDowngrade = true;
+  checks = 0;
+  downloads = 0;
+  installs: boolean[][] = [];
+  failCheck = false;
+  failDownload = false;
+  async checkForUpdates() {
+    this.checks++;
+    if (this.failCheck) throw new Error('offline');
+    this.emit('update-available', { version: '1.3.1' });
+    return null;
+  }
+  async downloadUpdate() {
+    this.downloads++;
+    if (this.failDownload) throw new Error('SHA512 mismatch');
+    this.emit('download-progress', { percent: 45 });
+    return [];
+  }
+  quitAndInstall(silent: boolean, relaunch: boolean) { this.installs.push([silent, relaunch]); }
+}
+
+function fixture(silent = false) {
+  const updater = new FakeUpdater();
+  let exporting = false;
+  const service = new UpdateService(updater, '1.3.0', silent, () => !exporting);
+  return { updater, service, setExporting: (value: boolean) => { exporting = value; } };
+}
+
+test('default checks announce updates without downloading or installing on quit', async () => {
+  const { updater, service } = fixture();
+  await service.check();
+  assert.equal(updater.autoDownload, false);
+  assert.equal(updater.autoInstallOnAppQuit, false);
+  assert.equal(updater.allowPrerelease, false);
+  assert.equal(updater.allowDowngrade, false);
+  assert.equal(service.getState().status, 'available');
+  assert.equal(service.getState().availableVersion, '1.3.1');
+  assert.equal(updater.downloads, 0);
+  assert.equal(service.installOnClose(), false);
+});
+
+test('manual download publishes progress and only installs when ready', async () => {
+  const { updater, service } = fixture();
+  const states: string[] = [];
+  const unsubscribe = service.subscribe(state => states.push(state.status));
+  assert.equal(service.install(true), false);
+  await service.check();
+  await service.download();
+  assert.equal(service.getState().percent, 45);
+  assert.equal(service.install(true), false);
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  assert.equal(service.installOnClose(), false);
+  assert.equal(service.install(true), true);
+  assert.deepEqual(updater.installs, [[true, true]]);
+  assert.equal(service.install(true), false, 'duplicate install is ignored');
+  assert.ok(states.includes('downloading'));
+  unsubscribe();
+});
+
+test('silent downloads automatically, installs on normal close and does not reopen', async () => {
+  const { updater, service } = fixture(true);
+  await service.check();
+  assert.equal(updater.downloads, 1);
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  assert.equal(service.installOnClose(), true);
+  assert.deepEqual(updater.installs, [[true, false]]);
+});
+
+test('enabling silent after a manual download arms installation immediately', async () => {
+  const { updater, service } = fixture();
+  await service.check();
+  await service.download();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  service.setSilent(true);
+  assert.equal(service.installOnClose(), true);
+  assert.deepEqual(updater.installs, [[true, false]]);
+});
+
+test('disabling silent prevents pending automatic installation', async () => {
+  const { updater, service } = fixture(true);
+  await service.check();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  service.setSilent(false);
+  assert.equal(service.installOnClose(), false);
+  assert.deepEqual(updater.installs, []);
+});
+
+test('exporting blocks manual and silent installation', async () => {
+  const { updater, service, setExporting } = fixture(true);
+  await service.check();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  setExporting(true);
+  assert.equal(service.install(true), false);
+  assert.equal(service.installOnClose(), false);
+  assert.deepEqual(updater.installs, []);
+  setExporting(false);
+  assert.equal(service.installOnClose(), true);
+});
+
+test('errors remain recoverable and an invalid download cannot be installed', async () => {
+  const { updater, service } = fixture();
+  updater.failCheck = true;
+  await service.check();
+  assert.equal(service.getState().status, 'error');
+  updater.failCheck = false;
+  await service.check();
+  updater.failDownload = true;
+  await service.download();
+  assert.equal(service.getState().status, 'error');
+  assert.equal(service.install(true), false);
+  updater.failDownload = false;
+  await service.download();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  assert.equal(service.getState().status, 'downloaded');
+});
+
+test('concurrent checks and downloads are deduplicated', async () => {
+  const { updater, service } = fixture();
+  await Promise.all([service.check(), service.check()]);
+  await Promise.all([service.download(), service.download()]);
+  assert.equal(updater.checks, 1);
+  assert.equal(updater.downloads, 1);
+});
+
+test('silent can start a previously announced download; turning it off never installs', async () => {
+  const { updater, service } = fixture();
+  await service.check();
+  service.setSilent(true);
+  assert.equal(updater.downloads, 1);
+  service.setSilent(false);
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  assert.equal(service.installOnClose(), false);
+});
+
+test('runtime updater errors are caught and unsubscription removes UI callbacks', async () => {
+  const { updater, service } = fixture();
+  let notifications = 0;
+  const unsubscribe = service.subscribe(() => notifications++);
+  updater.emit('error', new Error('network failure'));
+  assert.equal(service.getState().status, 'error');
+  const before = notifications;
+  unsubscribe();
+  updater.emit('error', new Error('another failure'));
+  assert.equal(notifications, before);
+});
+
+test('development and portable have an inert unsupported service', async () => {
+  const service = new UpdateService(null, '1.3.0', true);
+  await service.check();
+  await service.download();
+  assert.equal(service.getState().status, 'unsupported');
+  assert.equal(service.install(true), false);
+  assert.equal(service.installOnClose(), false);
+});

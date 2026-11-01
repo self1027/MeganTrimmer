@@ -40,30 +40,30 @@ test('getSettingsPath aponta para userData/settings.json', () => {
 
 test('sem arquivo: retorna defaults e NÃO cria nada (lazy)', () => {
   const { userData } = useTmpDirs();
-  assert.deepEqual(loadSettings(), { outputFolder: '' });
+  assert.deepEqual(loadSettings(), { outputFolder: '', silentUpdates: false });
   assert.ok(!fs.existsSync(userData), 'diretorio userData nao deve ser criado no load');
 });
 
 test('saveSettings cria diretorio e persiste; loadSettings relê do disco', () => {
   const { userData } = useTmpDirs();
-  saveSettings({ outputFolder: '/tmp/clipes' });
+  saveSettings({ outputFolder: '/tmp/clipes', silentUpdates: false });
   assert.ok(fs.existsSync(path.join(userData, 'settings.json')));
-  assert.deepEqual(loadSettings(), { outputFolder: '/tmp/clipes' });
+  assert.deepEqual(loadSettings(), { outputFolder: '/tmp/clipes', silentUpdates: false });
 });
 
 test('escrita atômica: não deixa settings.json.tmp para trás', () => {
   const { userData } = useTmpDirs();
-  saveSettings({ outputFolder: '/tmp/a' });
-  saveSettings({ outputFolder: '/tmp/b' });
+  saveSettings({ outputFolder: '/tmp/a', silentUpdates: false });
+  saveSettings({ outputFolder: '/tmp/b', silentUpdates: false });
   assert.deepEqual(fs.readdirSync(userData), ['settings.json']);
-  assert.deepEqual(loadSettings(), { outputFolder: '/tmp/b' });
+  assert.deepEqual(loadSettings(), { outputFolder: '/tmp/b', silentUpdates: false });
 });
 
 test('JSON inválido: warning fixo + defaults, sem crash', () => {
   useTmpDirs();
   fs.mkdirSync(process.env.MT_USERDATA!, { recursive: true });
   fs.writeFileSync(getSettingsPath(), '{ not valid json !!!');
-  assert.deepEqual(loadSettings(), { outputFolder: '' });
+  assert.deepEqual(loadSettings(), { outputFolder: '', silentUpdates: false });
 });
 
 test('merge defensivo: chaves ausentes ou de tipo errado voltam ao default', () => {
@@ -71,13 +71,24 @@ test('merge defensivo: chaves ausentes ou de tipo errado voltam ao default', () 
   fs.mkdirSync(process.env.MT_USERDATA!, { recursive: true });
 
   fs.writeFileSync(getSettingsPath(), '{}');
-  assert.deepEqual(loadSettings(), { outputFolder: '' });
+  assert.deepEqual(loadSettings(), { outputFolder: '', silentUpdates: false });
 
   fs.writeFileSync(getSettingsPath(), JSON.stringify({ outputFolder: 12345 }));
-  assert.deepEqual(loadSettings(), { outputFolder: '' }, 'tipo errado -> default');
+  assert.deepEqual(loadSettings(), { outputFolder: '', silentUpdates: false }, 'tipo errado -> default');
 
   fs.writeFileSync(getSettingsPath(), JSON.stringify(null));
-  assert.deepEqual(loadSettings(), { outputFolder: '' }, 'null -> default');
+  assert.deepEqual(loadSettings(), { outputFolder: '', silentUpdates: false }, 'null -> default');
+});
+
+test('silent updates default off and persist independently of the output folder', () => {
+  const { userData } = useTmpDirs();
+  assert.equal(loadSettings().silentUpdates, false);
+  fs.mkdirSync(userData, { recursive: true });
+  fs.writeFileSync(getSettingsPath(), JSON.stringify({ outputFolder: '/clips', silentUpdates: true }));
+  assert.equal(loadSettings().silentUpdates, true);
+  assert.equal(loadSettings().outputFolder, '/clips');
+  fs.writeFileSync(getSettingsPath(), JSON.stringify({ silentUpdates: 'true' }));
+  assert.equal(loadSettings().silentUpdates, false);
 });
 
 test('resolveOutputFolder usa a pasta configurada quando existe no disco', () => {
