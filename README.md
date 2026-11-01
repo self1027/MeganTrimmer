@@ -48,7 +48,7 @@ O processamento acontece no seu computador, com o FFmpeg já incluído no aplica
 
 Baixe a versão para Windows na página de [Releases](https://github.com/self1027/megan-trimmer/releases). Escolha **Setup.exe** para instalar com atualizações pelo aplicativo ou **Portable.exe** para abrir sem instalar.
 
-O aplicativo instalado avisa quando há uma versão nova e pede confirmação para baixar e reiniciar. Em **Atualizações**, você pode ativar **Atualização silenciosa** para baixar automaticamente e instalar ao fechar. Exportações em andamento impedem o reinício, e alterações não exportadas exigem confirmação antes de fechar.
+Quando há uma versão nova, o aplicativo pede uma escolha antes de liberar o editor: **Atualizar agora** ou **Continuar sem atualizar**. O aviso também tem um link para as novidades no GitHub Releases. Escolher continuar não baixa nem instala a atualização; você pode reconsiderar pelo botão **Atualizações**. Exportações em andamento impedem o reinício, e alterações não exportadas exigem confirmação antes de fechar.
 
 Se já usa uma versão antiga, execute o novo **Setup.exe** uma vez: ele reconhece a instalação anterior, inclusive a feita pelo MSI, e mantém suas configurações. No portátil, feche o aplicativo e substitua o arquivo manualmente.
 

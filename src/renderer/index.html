@@ -66,19 +66,7 @@
       </div>
       <div class="settings-group">
         <div class="destination-heading"><label>Salvar em</label>
-          <details id="updateSettings" class="update-settings">
-            <summary>Atualizações <span id="appVersion"></span></summary>
-            <div class="update-content">
-            <p id="updateStatus" role="status" aria-live="polite"></p>
-            <progress id="updateProgress" max="100" value="0" aria-label="Download da atualização" hidden></progress>
-            <label class="update-option"><input id="silentUpdates" type="checkbox"> Atualização silenciosa</label>
-            <p class="update-description">Baixa automaticamente e instala ao fechar. Instalações antigas podem pedir administrador.</p>
-            <button id="checkUpdates" class="text-button">Verificar atualizações</button>
-            <button id="downloadUpdate" class="text-button" hidden>Baixar atualização</button>
-            <button id="installUpdate" class="text-button" hidden>Reiniciar e atualizar</button>
-            <a href="https://github.com/self1027/megan-trimmer/releases/latest" target="_blank" rel="noreferrer">Abrir downloads no GitHub ↗</a>
-            </div>
-          </details>
+          <button id="checkUpdates" class="text-button" title="Verificar atualizações">Atualizações <span id="appVersion"></span></button>
           <button id="settingsToggle" class="control-btn" title="Configurar pasta de clipes" aria-label="Configurar pasta de clipes" aria-expanded="false" aria-controls="settingsPanel" data-lock-while-busy><svg class="icon"><use href="#icon-settings"/></svg></button>
         </div>
         <p id="outputFolderText" class="settings-path">Padrão (Vídeos/MeganTrimmer)</p>
@@ -86,7 +74,6 @@
           <button id="pickFolderBtn" class="button secondary" data-lock-while-busy>Escolher pasta</button>
           <button id="resetFolderBtn" class="text-button" data-lock-while-busy>Restaurar padrão</button>
         </div>
-        <button id="updateNotice" class="text-button" aria-controls="settingsPanel" hidden></button>
       </div>
       <div class="export-actions">
         <div class="export-feedback">
@@ -108,5 +95,16 @@
     <form method="dialog"><span class="eyebrow">Antes de continuar</span><h2 id="replaceTitle">Guardar este corte?</h2><p id="replaceDescription">Há alterações que ainda não foram exportadas. Escolha o que fazer antes de abrir o próximo vídeo.</p><div class="dialog-actions"><button class="button primary" value="export">Exportar e abrir</button><button class="button secondary" value="discard">Descartar e abrir</button><button class="text-button" value="cancel" autofocus>Cancelar</button></div></form>
   </dialog>
   <script type="module" src="./renderer.js"></script>
+  <dialog id="updateDialog" aria-labelledby="updateTitle" aria-describedby="updateStatus">
+    <span class="eyebrow">MeganTrimmer</span>
+    <h2 id="updateTitle">Nova atualização</h2>
+    <p id="updateStatus" role="status" aria-live="polite"></p>
+    <progress id="updateProgress" max="100" value="0" aria-label="Download da atualização" hidden></progress>
+    <div class="dialog-actions">
+      <button id="updateNow" class="button primary" type="button">Atualizar agora</button>
+      <button id="skipUpdate" class="button secondary" type="button" autofocus>Continuar sem atualizar</button>
+    </div>
+    <a class="update-release-link" href="https://github.com/self1027/megan-trimmer/releases/latest" target="_blank" rel="noreferrer">Ver novidades no GitHub Releases ↗</a>
+  </dialog>
 </body>
 </html>

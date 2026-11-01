@@ -2,7 +2,7 @@ import { ipcMain, dialog } from 'electron';
 import { loadSettings, saveSettings } from '../services/settings.js';
 import type { AppSettings } from '../../shared/types.js';
 
-export function registerSettingsIpc(onSaved: (settings: AppSettings) => void = () => {}): void {
+export function registerSettingsIpc(): void {
   ipcMain.handle('get-settings', (): AppSettings => {
     return loadSettings();
   });
@@ -15,10 +15,8 @@ export function registerSettingsIpc(onSaved: (settings: AppSettings) => void = (
     if (typeof patch?.outputFolder === 'string') {
       next.outputFolder = patch.outputFolder;
     }
-    if (typeof patch?.silentUpdates === 'boolean') next.silentUpdates = patch.silentUpdates;
 
     saveSettings(next);
-    onSaved(next);
     return next;
   });
 

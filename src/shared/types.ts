@@ -57,7 +57,6 @@ export interface VideoInfo {
 export interface AppSettings {
   /** Caminho absoluto da pasta de saída; '' = usar fallback (Videos/MeganTrimmer). */
   outputFolder: string;
-  silentUpdates: boolean;
 }
 
 export interface UpdateState {

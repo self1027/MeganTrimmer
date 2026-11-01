@@ -2,13 +2,12 @@ import { app, dialog, ipcMain, type BrowserWindow } from 'electron';
 import electronUpdater from 'electron-updater';
 import { UpdateService } from './services/updater.js';
 import { ExitGuard } from './services/exit-guard.js';
-import { loadSettings } from './services/settings.js';
 import { isExporting } from './ipc/export.js';
 
 export function setupUpdates(window: BrowserWindow, injectedService?: UpdateService): UpdateService {
   const supported = app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_FILE;
   const service = injectedService ?? new UpdateService(supported ? electronUpdater.autoUpdater : null,
-    app.getVersion(), loadSettings().silentUpdates, () => !isExporting());
+    app.getVersion(), () => !isExporting());
   let dirty = false;
   let allowQuit = false;
   let sessionEnding = false;
@@ -38,7 +37,7 @@ export function setupUpdates(window: BrowserWindow, injectedService?: UpdateServ
         if (!installing) allowQuit = false;
         return installing;
       }
-      if (!service.installOnClose()) app.quit();
+      app.quit();
       return true;
     } finally { exiting = false; }
   }

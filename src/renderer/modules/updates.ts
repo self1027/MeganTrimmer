@@ -1,53 +1,81 @@
 import type { UpdateState } from '../../shared/types.js';
 
 export function setupUpdates(): void {
-  const panel = document.querySelector<HTMLDetailsElement>('#updateSettings')!;
+  const dialog = document.querySelector<HTMLDialogElement>('#updateDialog')!;
   const status = document.querySelector<HTMLElement>('#updateStatus')!;
   const check = document.querySelector<HTMLButtonElement>('#checkUpdates')!;
-  const download = document.querySelector<HTMLButtonElement>('#downloadUpdate')!;
-  const install = document.querySelector<HTMLButtonElement>('#installUpdate')!;
-  const silent = document.querySelector<HTMLInputElement>('#silentUpdates')!;
+  const update = document.querySelector<HTMLButtonElement>('#updateNow')!;
+  const skip = document.querySelector<HTMLButtonElement>('#skipUpdate')!;
   const progress = document.querySelector<HTMLProgressElement>('#updateProgress')!;
-  const notice = document.querySelector<HTMLButtonElement>('#updateNotice')!;
-  const error = () => { status.textContent = 'Não foi possível atualizar. Tente novamente.'; };
+  let current: UpdateState;
+  let declinedVersion: string | undefined;
+  let chosenUpdate = false;
+  let restarting = false;
 
+  function open(): void { if (!dialog.open) dialog.showModal(); }
+  function failure(): void {
+    chosenUpdate = false;
+    update.disabled = false;
+    status.textContent = 'Não foi possível atualizar. Tente novamente ou continue sem atualizar.';
+  }
+  async function restart(): Promise<void> {
+    if (restarting) return;
+    chosenUpdate = false;
+    restarting = true;
+    update.disabled = true;
+    try {
+      if (!await window.api.installUpdate()) {
+        status.textContent = 'Você pode continuar editando ou tentar atualizar quando estiver pronto.';
+      }
+    } catch { failure(); }
+    finally { restarting = false; update.disabled = false; }
+  }
   function render(state: UpdateState): void {
+    current = state;
     document.querySelector('#appVersion')!.textContent = `v${state.currentVersion}`;
     const messages: Record<UpdateState['status'], string> = {
-      idle: 'Verifique se há uma versão mais recente.', checking: 'Verificando atualizações…',
-      available: `Versão ${state.availableVersion} disponível.`, downloading: `Baixando atualização… ${Math.round(state.percent ?? 0)}%`,
-      downloaded: 'Atualização pronta. Reinicie quando quiser.', error: 'Não foi possível atualizar. Tente novamente.',
-      unsupported: 'Para atualizar, baixe a versão mais recente no GitHub.',
+      idle: 'Você está na versão mais recente.', checking: 'Verificando atualizações…',
+      available: `A versão ${state.availableVersion} está disponível. Quer atualizar agora?`,
+      downloading: `Baixando atualização… ${Math.round(state.percent ?? 0)}%`,
+      downloaded: 'Atualização pronta. Reinicie para instalar.',
+      error: 'Não foi possível atualizar. Tente novamente ou continue sem atualizar.',
+      unsupported: 'Baixe a versão mais recente pelo link do GitHub Releases.',
     };
     status.textContent = state.message || messages[state.status];
-    check.disabled = ['checking', 'downloading', 'downloaded', 'unsupported'].includes(state.status);
-    download.hidden = !['available', 'error'].includes(state.status) || !state.availableVersion;
-    install.hidden = state.status !== 'downloaded';
+    check.disabled = state.status === 'checking';
+    check.title = messages[state.status];
+    update.disabled = ['checking', 'downloading', 'unsupported'].includes(state.status) || restarting;
+    update.textContent = state.status === 'downloaded' ? 'Reiniciar e atualizar' : state.status === 'error' ? 'Tentar novamente' : 'Atualizar agora';
     progress.hidden = state.status !== 'downloading';
     progress.value = state.percent ?? 0;
-    silent.disabled = state.status === 'unsupported';
-    notice.hidden = !['available', 'downloaded'].includes(state.status);
-    notice.textContent = state.status === 'downloaded' ? 'Atualização pronta para instalar' : `Nova versão ${state.availableVersion} disponível`;
+    if (state.status === 'error') chosenUpdate = false;
+    if (state.availableVersion && state.availableVersion !== declinedVersion &&
+        ['available', 'downloaded', 'error'].includes(state.status)) open();
+    if (state.status === 'downloaded' && chosenUpdate) void restart();
   }
 
-  check.addEventListener('click', () => { void window.api.checkForUpdates().then(render).catch(error); });
-  notice.addEventListener('click', () => {
-    panel.open = true;
+  dialog.addEventListener('cancel', event => event.preventDefault());
+  skip.addEventListener('click', () => {
+    declinedVersion = current?.availableVersion;
+    chosenUpdate = false;
+    dialog.close();
   });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') panel.open = false; });
-  document.addEventListener('click', event => {
-    if (event.target instanceof Node && !panel.contains(event.target) && !notice.contains(event.target)) panel.open = false;
+  update.addEventListener('click', async () => {
+    chosenUpdate = true;
+    if (current.status === 'downloaded') { void restart(); return; }
+    try {
+      if (!current.availableVersion) await window.api.checkForUpdates();
+      if (current.status === 'available' || current.availableVersion) await window.api.downloadUpdate();
+    } catch { failure(); }
   });
-  download.addEventListener('click', () => { void window.api.downloadUpdate().then(render).catch(error); });
-  install.addEventListener('click', () => { void window.api.installUpdate().catch(error); });
-  silent.addEventListener('change', async () => {
-    silent.disabled = true;
-    try { silent.checked = (await window.api.setSettings({ silentUpdates: silent.checked })).silentUpdates; }
-    catch { silent.checked = !silent.checked; error(); }
-    finally { silent.disabled = false; }
+  check.addEventListener('click', async () => {
+    declinedVersion = undefined;
+    if (current && ['available', 'downloaded', 'downloading', 'unsupported'].includes(current.status)) {
+      open(); return;
+    }
+    try { render(await window.api.checkForUpdates()); } catch { failure(); }
   });
-  window.api.getSettings().then(settings => { silent.checked = settings.silentUpdates; }).catch(error);
   const unsubscribe = window.api.onUpdateState(render);
   window.addEventListener('beforeunload', unsubscribe, { once: true });
-  void window.api.getUpdateState().then(render).catch(error);
+  void window.api.getUpdateState().then(render).catch(failure);
 }

@@ -17,9 +17,8 @@ function resolveExternalFilePath(argv: string[]): string | undefined {
 app.whenReady().then(() => {
   const filePath = resolveExternalFilePath(process.argv);
 
-  const window = createWindow(filePath);
-  const updates = setupUpdates(window);
-  registerIpcHandlers(settings => updates.setSilent(settings.silentUpdates));
+  registerIpcHandlers();
+  setupUpdates(createWindow(filePath));
 });
 
 app.on('window-all-closed', () => {

@@ -5,7 +5,7 @@
 - Windows x64: NSIS EXE + portátil; sem novos MSI nem assinatura digital.
 - GitHub Releases público: self1027/megan-trimmer, canal estável.
 - Verificar ao abrir, a cada seis horas e por ação manual.
-- Padrão: confirmar download e instalação. Opção silenciosa: baixar e instalar ao fechar normalmente.
+- Escolha explícita obrigatória quando há nova versão: modal com dois botões (atualizar ou continuar sem atualizar) e link para Releases; nenhuma instalação automática ao fechar.
 - Preservar identidade, configurações, diretório e escopo das instalações existentes.
 - Novas instalações por usuário; antigos MSI encapsulam NSIS e seguem seu upgrade nativo.
 - Não interromper exportações nem perder alterações sem confirmação.
@@ -23,8 +23,8 @@
 
 ## Critérios de aceite
 
-- Nenhum download automático no modo padrão, nem instalação automática sem modo silencioso.
-- Alternar a preferência depois do download afeta o fechamento imediatamente.
+- Nenhum download antes da escolha de atualizar, nem instalação ao fechar normalmente.
+- Continuar sem atualizar libera o editor e impede reinício, inclusive se a pessoa mudar de ideia durante o download.
 - Exportação bloqueia reinício; cancelar descarte mantém o editor aberto.
 - Falhas de rede/integridade deixam o app utilizável, sem instalação.
 - Portátil e desenvolvimento não executam NSIS via atualizador.
@@ -47,3 +47,5 @@
 - Pacote: seis formatos exportados e decodificados com PATH vazio, usando FFmpeg/FFprobe incluídos no asar.
 - Ruling: os testes de substituição física, MSI e UAC ficam para Windows descartável; Windows Sandbox não está disponível neste host e instalar aqui alteraria o ambiente pessoal.
 - Revisão independente: falha do instalador emitida por evento podia deixar instalação/fechamento liberados; reproduzida em dois testes e corrigida, com regressão adicional no Electron para manter a proteção de alterações pendentes.
+- Revisão do usuário: substituir checkbox/opção silenciosa por diálogo modal obrigatório, com Atualizar agora, Continuar sem atualizar e hyperlink para GitHub Releases. A decisão explícita substitui o comportamento silencioso anterior; preferências antigas são ignoradas.
+- Fluxo revisado: 59 testes Node passaram; o smoke Electron confirmou bloqueio modal, dois botões, recusa sem download, recusa durante download, reabertura manual, descarte cancelado e ausência de instalação ao fechar. Os quatro testes exclusivos do modo silencioso removido foram retirados.

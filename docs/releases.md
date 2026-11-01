@@ -10,6 +10,8 @@ Instalações novas são por usuário. Nas existentes, o instalador mantém o es
 
 Versões anteriores à 1.3.0 precisam executar o novo Setup manualmente uma vez. O portátil continua com substituição manual. Os novos instaladores aceitam reinstalar a mesma versão e rejeitam downgrade; essa proteção não modifica instaladores antigos já distribuídos.
 
+Quando encontra uma versão nova, o app abre um diálogo modal com **Atualizar agora**, **Continuar sem atualizar** e um link para o GitHub Releases. A pessoa precisa escolher um dos botões para voltar ao editor. Escape e clique fora não dispensam essa escolha. Recusar não impede o uso do app nem instala nada ao fechar; a mesma versão não reaparece automaticamente nessa sessão. O botão **Atualizações** permite reconsiderar. Não há checkbox nem preferência de instalação automática.
+
 Os executáveis continuam sem certificado digital. O download usa HTTPS em produção e o atualizador confere o SHA-512 do instalador. Isso não substitui a autenticação do editor por assinatura digital; o Windows ainda pode exibir avisos de segurança.
 
 ## Publicar
@@ -53,7 +55,7 @@ Antes de publicar a primeira versão com auto-update, execute em VM ou Windows S
 - Manter o app aberto, inclusive durante exportação, e executar o Setup manual e silenciosamente: ele deve aguardar a saída quando iniciado pelo updater ou recusar sem encerrar o app à força.
 - Testar usuário padrão, instalação antiga para todos os usuários e cancelamento do UAC.
 - Confirmar que o portátil não executa o Setup e que suas configurações continuam utilizáveis.
-- Entre dois builds instalados com versões diferentes, validar download, reinício manual e instalação silenciosa ao fechar; conferir a versão após reabrir.
+- Entre dois builds instalados com versões diferentes, validar a escolha de atualizar, o download e o reinício; conferir a versão após reabrir. Ao escolher continuar, conferir que o editor é liberado e fechar não instala nada.
 - Cancelar o descarte de alterações e tentar atualizar durante exportação: o editor deve permanecer aberto.
 
 ## Verificação local automatizada

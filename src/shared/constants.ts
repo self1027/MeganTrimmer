@@ -39,7 +39,7 @@ export const SUPPORTED_VIDEO_EXTENSIONS = ['mp4', 'mkv', 'mov'] as const;
 /** Nome do arquivo de configuração dentro de app.getPath('userData'). */
 export const SETTINGS_FILENAME = 'settings.json';
 
-export const DEFAULT_SETTINGS: AppSettings = { outputFolder: '', silentUpdates: false };
+export const DEFAULT_SETTINGS: AppSettings = { outputFolder: '' };
 
 /** Subpasta criada dentro de app.getPath('videos') quando nenhuma pasta foi escolhida. */
 export const FALLBACK_SUBFOLDER = 'MeganTrimmer';

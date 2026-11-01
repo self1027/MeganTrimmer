@@ -42,11 +42,9 @@ export function loadSettings(): AppSettings {
 
 function sanitizeSettings(parsed: unknown): AppSettings {
   const outputFolder = (parsed as AppSettings | null | undefined)?.outputFolder;
-  const silentUpdates = (parsed as AppSettings | null | undefined)?.silentUpdates;
   return {
     ...DEFAULT_SETTINGS,
-    ...(typeof outputFolder === 'string' ? { outputFolder } : {}),
-    ...(typeof silentUpdates === 'boolean' ? { silentUpdates } : {})
+    ...(typeof outputFolder === 'string' ? { outputFolder } : {})
   };
 }
 

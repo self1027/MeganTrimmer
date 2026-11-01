@@ -3,13 +3,12 @@ import { registerExportIpc } from './export.js';
 import { registerOptionsIpc } from './options.js';
 import { registerSettingsIpc } from './settings.js';
 import { registerVideoIpc } from './video.js';
-import type { AppSettings } from '../../shared/types.js';
 
 /** Registra todos os handlers IPC do processo principal. Sem lógica aqui. */
-export function registerIpcHandlers(onSettingsSaved?: (settings: AppSettings) => void): void {
+export function registerIpcHandlers(): void {
   registerDialogIpc();
   registerOptionsIpc();
-  registerSettingsIpc(onSettingsSaved);
+  registerSettingsIpc();
   registerExportIpc();
   registerVideoIpc();
 }

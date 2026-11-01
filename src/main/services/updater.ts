@@ -20,18 +20,17 @@ export class UpdateService {
   private ready = false;
   private installing = false;
 
-  constructor(private updater: UpdaterPort | null, version: string, private silent = false,
+  constructor(private updater: UpdaterPort | null, version: string,
     private canInstall: () => boolean = () => true) {
     this.state = { status: updater ? 'idle' : 'unsupported', currentVersion: version };
     if (!updater) return;
     updater.autoDownload = false;
-    // The close controller owns scheduling so changing the preference also affects cached downloads.
+    // Installation always requires the explicit choice in the update dialog.
     updater.autoInstallOnAppQuit = false;
     updater.allowPrerelease = false;
     updater.allowDowngrade = false;
     updater.on('update-available', info => {
       this.publish({ status: 'available', availableVersion: info.version, message: undefined });
-      if (this.silent) void this.download();
     });
     updater.on('update-not-available', () => this.publish({ status: 'idle', message: 'Você está na versão mais recente.' }));
     updater.on('download-progress', progress => this.publish({
@@ -49,11 +48,6 @@ export class UpdateService {
   subscribe(listener: (state: UpdateState) => void): () => void {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
-  }
-
-  setSilent(enabled: boolean): void {
-    this.silent = enabled;
-    if (enabled && this.state.status === 'available') void this.download();
   }
 
   private publish(patch: Partial<UpdateState>): void {
@@ -94,5 +88,4 @@ export class UpdateService {
     catch { this.installing = false; this.fail(); return false; }
   }
 
-  installOnClose(): boolean { return this.silent && this.install(false); }
 }
