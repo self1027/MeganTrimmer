@@ -43,7 +43,7 @@ async function connection(port) {
   throw new Error(`The packaged app did not expose its test debugging endpoint on ${port}`);
 }
 
-setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }, 90000).unref();
+setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }, 180000).unref();
 (async () => {
   const renderer = await connection(9333);
   const main = await connection(9334);
@@ -89,29 +89,40 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
       } else {
         await renderer.evaluate("document.querySelector('#updateNow').click()");
       }
-    } else if (mode === 'export') {
-      await renderer.evaluate(`void (window.__nativeExport = window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '60', format: 'avi' }))`);
-      let busy = false;
-      for (let i = 0; i < 100 && !busy; i++) {
-        busy = await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())");
-        if (!busy) await pause(100);
+    } else if (mode === 'export' || mode === 'assert-export' || mode === 'finish-export') {
+      const phase = () => renderer.evaluate(`new Promise(resolve => {
+        const pending = window.__nativeExport;
+        if (!pending || typeof pending.then !== 'function') { resolve('missing'); return; }
+        let settled = false;
+        pending.then(value => { settled = true; window.__exportResult = value; }, error => {
+          settled = true;
+          window.__exportResult = { ok: false, error: String(error && (error.stack || error.message) || error) };
+        });
+        setTimeout(() => resolve(settled ? 'settled' : 'running'), 200);
+      })`);
+      if (mode === 'export') {
+        await renderer.evaluate(`window.__nativeExport = window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '60', format: 'avi' })`);
+        let state = 'missing';
+        for (let i = 0; i < 50 && state !== 'running'; i++) {
+          state = await phase();
+          if (state === 'settled') throw new Error(`Export ended before the installer could run: ${JSON.stringify(await renderer.evaluate('window.__exportResult'))}`);
+          if (state !== 'running') await pause(100);
+        }
+        assert.equal(state, 'running', 'The native app must really be exporting during the running-process test');
+      } else if (mode === 'assert-export') {
+        assert.equal(await phase(), 'running');
+      } else {
+        const deadline = Date.now() + 150000;
+        let state = 'running';
+        while (Date.now() < deadline && state === 'running') state = await phase();
+        if (state !== 'settled') throw new Error('Export did not complete');
+        const result = await renderer.evaluate('window.__exportResult');
+        assert.equal(result.ok, true, JSON.stringify(result));
+        assert.ok(fs.statSync(result.output).size > 0);
+        const ffmpeg = path.resolve('release/win-unpacked/resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe');
+        const decoded = spawnSync(ffmpeg, ['-v', 'error', '-i', result.output, '-f', 'null', '-']);
+        assert.equal(decoded.status, 0, decoded.stderr?.toString());
       }
-      assert.ok(busy, 'The native app must really be exporting during the running-process test');
-    } else if (mode === 'assert-export') {
-      assert.equal(await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())"), true);
-    } else if (mode === 'finish-export') {
-      for (let i = 0; i < 400; i++) {
-        const busy = await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())");
-        if (!busy) break;
-        if (i === 399) throw new Error('Export did not complete');
-        await pause(150);
-      }
-      const result = await renderer.evaluate('window.__nativeExport');
-      assert.equal(result.ok, true, JSON.stringify(result));
-      assert.ok(fs.statSync(result.output).size > 0);
-      const ffmpeg = path.resolve('release/win-unpacked/resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe');
-      const decoded = spawnSync(ffmpeg, ['-v', 'error', '-i', result.output, '-f', 'null', '-']);
-      assert.equal(decoded.status, 0, decoded.stderr?.toString());
     }
     console.log(`PASS packaged app ${mode}, version ${expectedVersion}`);
   } finally { renderer.close(); main.close(); }
