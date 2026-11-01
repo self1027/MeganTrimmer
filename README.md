@@ -1,119 +1,78 @@
-# MeganTrimmer
+﻿<p align="center">
+  <img src="src/assets/logo.svg" alt="Logo do MeganTrimmer" width="112">
+</p>
 
-Editor de vídeo leve para cortes rápidos, focado em fluxo direto: abrir, marcar início/fim, exportar.
+<h1 align="center">MeganTrimmer</h1>
 
-## Features
+<p align="center">Corte vídeos e converta arquivos em uma interface simples.</p>
 
-- 🎬 Corte preciso por timeline com scrub de playhead e thumbnails de preview
-- 📦 Formatos de saída: ORIGINAL (stream copy), MP4, MKV, AVI (vídeo) e MP3, WAV (áudio)
-- 🖥️ Aceleração por hardware (AMD AMF → NVIDIA NVENC → Intel QSV → software libx264)
-- 🎞️ Controle de resolução e frame rate com filtragem baseada no vídeo de origem
-- 💾 Pasta de clipes configurável (persistida entre sessões)
-- 🧩 Salvamento incremental: colisões de nome viram `clip (1).mp4`, `clip (2).mp4`, ...
-- 🌙 Interface dark minimalista
-- 🪟 Instalador Windows com "Abrir com MeganTrimmer" no menu de contexto (`.mp4`, `.mkv`, `.mov`)
+<p align="center">
+  <img src="https://img.shields.io/badge/Electron-47848F?style=flat&logo=electron&logoColor=white" alt="Electron">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/FFmpeg-007808?style=flat&logo=ffmpeg&logoColor=white" alt="FFmpeg">
+</p>
 
-## Requisitos
+<p align="center">
+  <a href="https://github.com/self1027/megan-trimmer/releases">Baixar para Windows</a> ·
+  <a href="#como-usar">Como usar</a> ·
+  <a href="https://github.com/self1027/megan-trimmer/issues">Relatar um problema</a>
+</p>
 
-- Node.js 22.12+
-- Windows / macOS / Linux (Electron 41+)
+O MeganTrimmer é para quando você quer tirar um trecho de um vídeo ou mudar seu formato. A prévia, a seleção do corte e as opções de exportação ficam na mesma tela, para você acompanhar o que está fazendo até salvar o arquivo.
 
-## Stack Técnica
+A proposta é manter o aplicativo simples, sem bloatware, com manutenção e foco nas tarefas do dia a dia.
 
-- **Core:** Electron 41.2.0
-- **Linguagem:** TypeScript 6.0.2 (ambiente ESM)
-- **Processamento:** FFmpeg via fluent-ffmpeg, com binário integrado (`ffmpeg-static`)
-- **Empacotamento:** Electron Builder
+## Por dentro do app
 
-## Instalação
+Abra um arquivo ou arraste seu vídeo para a janela.
 
-```bash
-npm install
-```
+![Tela inicial do MeganTrimmer, com área para arrastar o vídeo e opções de exportação ao lado](docs/screenshots/inicio.png)
 
-## Desenvolvimento
+Escolha o trecho na linha do tempo e salve. O aviso de conclusão permite abrir a pasta do clipe.
 
-```bash
-npm run dev
-```
+![MeganTrimmer com um vídeo de demonstração aberto e a confirmação de que o clipe foi salvo](docs/screenshots/corte-salvo.png)
 
-Compila e abre o app (`npm run build` + `electron .`).
+*As capturas usam um vídeo de teste com fundo verde.*
 
-## Build
+## O que dá para fazer
 
-```bash
-npm run build
-```
+- Cortar um vídeo escolhendo o início e o fim na linha do tempo.
+- Converter vídeos para MP4, MKV ou AVI, ou extrair o áudio em MP3 e WAV.
+- Manter o formato original ou ajustar a resolução e os quadros por segundo.
+- Escolher onde salvar os clipes. O aplicativo lembra a pasta na próxima vez.
+- Preservar o arquivo original. Se o nome de saída já existir, o novo clipe recebe outro nome.
 
-O código compilado vai para `dist/`.
-
-## Testes
-
-```bash
-npm test
-```
-
-Roda `node --test` sobre os testes de `output-path` e `settings` (21 casos).
-
-## Distribuição
-
-Para gerar os instaláveis na pasta `release/`:
-
-```bash
-npm run dist           # Portable + MSI (ambos)
-npm run dist:portable  # só o Portable.exe
-npm run dist:msi       # só o Setup.msi
-```
-
-Artefatos gerados:
-- `MeganTrimmer-<versão>-Portable.exe` — roda sem instalação
-- `MeganTrimmer-<versão>-Setup.msi` — instala no sistema, cria atalhos e registra "Abrir com MeganTrimmer" no menu de contexto do Windows para `.mp4`, `.mkv`, `.mov`
-
-*Observação (Windows):* sem certificado de code signing, o SmartScreen alerta na primeira execução do instalador. Clique em **Mais informações** → **Executar assim mesmo** para prosseguir.
+O processamento acontece no seu computador, com o FFmpeg já incluído no aplicativo.
 
 ## Como usar
 
-1. Clique em **ABRIR ARQUIVO** — ou, no Windows instalado, botão direito em um arquivo `.mp4`/`.mkv`/`.mov` → **"Abrir com MeganTrimmer"**.
-2. Ajuste os handles de início/fim na timeline (tesouras verdes).
-3. Escolha formato, resolução e frame rate na sidebar direita.
-4. (Opcional) Clique em ⚙ para escolher a **pasta de clipes**. Sem configuração, o padrão é `Videos/MeganTrimmer/`.
-5. Clique em **EXPORTAR CORTE**. O arquivo final é salvo na pasta configurada.
+Baixe a versão para Windows na página de [Releases](https://github.com/self1027/megan-trimmer/releases). Escolha **Portable.exe** para abrir sem instalar ou **Setup.msi** para instalar no computador.
 
-Se já existir um arquivo com o mesmo nome, o MeganTrimmer **não sobrescreve** — gera `nome (1).ext`, `nome (2).ext`, etc.
+1. Clique em **Abrir arquivo** ou arraste um vídeo para o app.
+2. Ajuste as marcas de início e fim para selecionar o trecho.
+3. Escolha o formato e a pasta de destino.
+4. Clique em **Exportar corte**.
 
-## Especificações de Processamento
+Para converter o vídeo inteiro, mantenha a seleção do começo ao fim e escolha o formato de saída.
 
-- **Stream copy (sem reencode):** containers MP4, MKV e MOV com formato ORIGINAL.
-- **Reencode de vídeo:** libx264 via software com preset `veryfast`, ou hardware (h264_amf → h264_nvenc → h264_qsv) com `-quality speed`, detectado automaticamente.
-- **Áudio no reencode:** AAC. Extração de áudio: `libmp3lame` (MP3) ou `pcm_s16le` (WAV).
-- **Filtros:** escala com manutenção de proporção + padding para dimensões pares + `fps` quando resolução/frame rate difere do original.
-- **Mapeamento:** `-map 0` (trilhas integrais) e `-avoid_negative_ts make_zero`.
+## Acompanhe o projeto
 
-## Configurações
+Encontrou um problema ou sentiu falta de alguma coisa? [Abra uma issue](https://github.com/self1027/megan-trimmer/issues) contando o que aconteceu ou o que você gostaria de fazer.
 
-O arquivo `settings.json` fica em `app.getPath('userData')`:
+<details>
+<summary>Para rodar o projeto localmente</summary>
 
-- **Windows:** `%APPDATA%/MeganTrimmer/settings.json`
-- **macOS:** `~/Library/Application Support/MeganTrimmer/settings.json`
-- **Linux:** `~/.config/MeganTrimmer/settings.json`
+Você precisa de Node.js 22.12 ou superior. Na pasta do projeto:
 
-## Estrutura do projeto
-
-```
-src/
-├── shared/          # tipos e constantes compartilhados (main ↔ renderer)
-├── main/            # processo principal (Electron)
-│   ├── ipc/         # handlers IPC
-│   └── services/    # ffmpeg, settings, output-path, video-info
-├── preload.ts       # bridge segura (contextBridge)
-└── renderer/        # UI (DOM puro)
-    └── modules/     # módulos por responsabilidade
+```bash
+npm install
+npm run dev
 ```
 
-## Autor
+Para executar os testes, use `npm test`. Para gerar a versão portátil para Windows, use `npm run dist:portable`.
 
-Murilo D. — [Portfólio](https://murilod.dev/) · [LinkedIn](https://www.linkedin.com/in/murilo-dias-dev/) · [GitHub](https://github.com/self1027)
+</details>
 
-## Licença
+---
 
-ISC
+Feito por [Murilo D.](https://murilod.dev/) · [LinkedIn](https://www.linkedin.com/in/murilo-dias-dev/) · [GitHub](https://github.com/self1027) · Licença ISC
