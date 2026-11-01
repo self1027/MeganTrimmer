@@ -58,18 +58,20 @@ function publisherFixture(t) {
   const version = require('../package.json').version;
   const { folder } = fixture(t, version);
   let release = null;
+  const tag = `v${version}`;
   const calls = [];
   const run = args => {
     calls.push(args);
     if (args[0] === 'api') {
       if (args[1].endsWith('/latest')) return JSON.stringify({ tag_name: 'v1.2.0' });
+      if (args[1].includes('/releases?')) return JSON.stringify(release ? [release] : []);
       return JSON.stringify(release);
     }
-    if (args[1] === 'create') release = { draft: true, assets: [] };
+    if (args[1] === 'create') release = { tag_name: tag, draft: true, assets: [] };
     if (args[1] === 'upload') release.assets = args.slice(3, 7).map(file => ({ name: path.basename(file), size: fs.statSync(file).size }));
     return '';
   };
-  return { folder, tag: `v${version}`, calls, run, setRelease: value => { release = value; } };
+  return { folder, tag, calls, run, setRelease: value => { release = value ? { tag_name: tag, ...value } : null; } };
 }
 
 test('publishes only after upload verification and can resume drafts', async t => {

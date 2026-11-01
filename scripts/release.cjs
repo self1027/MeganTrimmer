@@ -57,17 +57,21 @@ function latestTag(run) {
   return JSON.parse(run(['api', `repos/${repo}/releases/latest`]))?.tag_name;
 }
 
+function releaseByTag(tag, run) {
+  const listed = JSON.parse(run(['api', `repos/${repo}/releases?per_page=20`]));
+  return Array.isArray(listed) ? listed.find(item => item.tag_name === tag) ?? null : null;
+}
+
 async function publishRelease(tag, folder, run = gh) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
   const version = validateVersion(tag, pkg, lock, latestTag(run));
   const files = await validateArtifacts(folder, version);
-  const endpoint = `repos/${repo}/releases/tags/${tag}`;
-  let release = JSON.parse(run(['api', endpoint]));
+  let release = releaseByTag(tag, run);
   assert.ok(!release || release.draft, 'A published release cannot be changed');
   if (!release) run(['release', 'create', tag, '--repo', repo, '--draft', '--verify-tag', '--title', tag, '--generate-notes']);
   run(['release', 'upload', tag, ...files, '--repo', repo, '--clobber']);
-  release = JSON.parse(run(['api', endpoint]));
+  release = releaseByTag(tag, run);
   assert.ok(release?.draft, 'Release must remain a draft until verification finishes');
   assert.equal(release.assets.length, files.length, 'Unexpected or incomplete uploaded assets');
   files.forEach(file => {
