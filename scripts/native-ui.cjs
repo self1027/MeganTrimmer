@@ -56,18 +56,30 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
     } else if (mode === 'quit') {
       await main.evaluate("setTimeout(() => process.getBuiltinModule('node:module').createRequire(process.resourcesPath + '/app.asar/package.json')('electron').app.quit(), 150); undefined");
     } else if (mode === 'decline' || mode === 'update') {
-      for (let i = 0; i < 100; i++) {
-        if ((await renderer.evaluate('window.api.getUpdateState()')).status !== 'checking') break;
-        await pause(100);
-      }
-      await main.evaluate(`(() => {
+      const useLocalFeed = `(() => {
         const req = process.getBuiltinModule('node:module').createRequire(process.resourcesPath + '/app.asar/package.json');
         const updater = req('electron-updater').autoUpdater;
         updater.setFeedURL({ provider: 'generic', url: 'http://127.0.0.1:9335' });
         updater.disableDifferentialDownload = true;
-      })()`);
-      const next = await renderer.evaluate('window.api.checkForUpdates()');
-      assert.equal(next.status, 'available');
+      })()`;
+      await main.evaluate(useLocalFeed);
+      let next = await renderer.evaluate('window.api.getUpdateState()');
+      for (let attempt = 0; attempt < 8 && next.status !== 'available'; attempt++) {
+        for (let i = 0; i < 50 && next.status === 'checking'; i++) {
+          await pause(100);
+          next = await renderer.evaluate('window.api.getUpdateState()');
+        }
+        next = await renderer.evaluate('window.api.checkForUpdates()');
+        for (let i = 0; i < 50 && next.status === 'checking'; i++) {
+          await pause(100);
+          next = await renderer.evaluate('window.api.getUpdateState()');
+        }
+        if (next.status !== 'available') {
+          await main.evaluate(useLocalFeed);
+          await pause(200);
+        }
+      }
+      assert.equal(next.status, 'available', JSON.stringify(next));
       assert.equal(await renderer.evaluate("document.querySelector('#updateDialog').matches(':modal')"), true);
       assert.equal(await renderer.evaluate("document.querySelectorAll('#updateDialog button').length"), 2);
       if (mode === 'decline') {
