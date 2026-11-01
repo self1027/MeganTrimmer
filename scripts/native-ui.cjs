@@ -101,7 +101,7 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
         setTimeout(() => resolve(settled ? 'settled' : 'running'), 200);
       })`);
       if (mode === 'export') {
-        await renderer.evaluate(`window.__nativeExport = window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '60', format: 'avi' })`);
+        await renderer.evaluate(`{ window.__nativeExport = window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '60', format: 'avi' }); undefined }`);
         let state = 'missing';
         for (let i = 0; i < 50 && state !== 'running'; i++) {
           state = await phase();
