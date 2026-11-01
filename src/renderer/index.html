@@ -65,12 +65,28 @@
         <label for="frameRateSelect">Quadros por segundo</label><select id="frameRateSelect" data-requires-video disabled></select>
       </div>
       <div class="settings-group">
-        <div class="destination-heading"><label>Salvar em</label><button id="settingsToggle" class="control-btn" title="Configurar pasta de clipes" aria-label="Configurar pasta de clipes" aria-expanded="false" aria-controls="settingsPanel" data-lock-while-busy><svg class="icon"><use href="#icon-settings"/></svg></button></div>
+        <div class="destination-heading"><label>Salvar em</label>
+          <details id="updateSettings" class="update-settings">
+            <summary>Atualizações <span id="appVersion"></span></summary>
+            <div class="update-content">
+            <p id="updateStatus" role="status" aria-live="polite"></p>
+            <progress id="updateProgress" max="100" value="0" aria-label="Download da atualização" hidden></progress>
+            <label class="update-option"><input id="silentUpdates" type="checkbox"> Atualização silenciosa</label>
+            <p class="update-description">Baixa automaticamente e instala ao fechar. Instalações antigas podem pedir administrador.</p>
+            <button id="checkUpdates" class="text-button">Verificar atualizações</button>
+            <button id="downloadUpdate" class="text-button" hidden>Baixar atualização</button>
+            <button id="installUpdate" class="text-button" hidden>Reiniciar e atualizar</button>
+            <a href="https://github.com/self1027/megan-trimmer/releases/latest" target="_blank" rel="noreferrer">Abrir downloads no GitHub ↗</a>
+            </div>
+          </details>
+          <button id="settingsToggle" class="control-btn" title="Configurar pasta de clipes" aria-label="Configurar pasta de clipes" aria-expanded="false" aria-controls="settingsPanel" data-lock-while-busy><svg class="icon"><use href="#icon-settings"/></svg></button>
+        </div>
         <p id="outputFolderText" class="settings-path">Padrão (Vídeos/MeganTrimmer)</p>
         <div id="settingsPanel" class="settings-panel hidden">
           <button id="pickFolderBtn" class="button secondary" data-lock-while-busy>Escolher pasta</button>
           <button id="resetFolderBtn" class="text-button" data-lock-while-busy>Restaurar padrão</button>
         </div>
+        <button id="updateNotice" class="text-button" aria-controls="settingsPanel" hidden></button>
       </div>
       <div class="export-actions">
         <div class="export-feedback">

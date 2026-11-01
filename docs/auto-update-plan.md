@@ -40,3 +40,4 @@
 - Decisão: controlador do app agenda a instalação; autoInstallOnAppQuit permanece false para evitar handlers obsoletos ao alternar a preferência.
 - Validação de VM: não executar instaladores sobre a instalação pessoal deste computador.
 - Controlador e preferência: npm test passou com 52 testes, incluindo download manual, troca de modo após download, falhas e concorrência.
+- Ciclo de vida: 56 testes Node e smoke Electron de edição/atualização passaram; o ambiente da sessão define ELECTRON_RUN_AS_NODE=1, removido somente do processo de teste para iniciar a interface real.

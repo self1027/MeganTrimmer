@@ -3,6 +3,7 @@ import path from 'path';
 import { SUPPORTED_VIDEO_EXTENSIONS } from '../shared/constants.js';
 import { registerIpcHandlers } from './ipc/index.js';
 import { createWindow } from './window.js';
+import { setupUpdates } from './updates.js';
 
 Menu.setApplicationMenu(null);
 
@@ -16,8 +17,9 @@ function resolveExternalFilePath(argv: string[]): string | undefined {
 app.whenReady().then(() => {
   const filePath = resolveExternalFilePath(process.argv);
 
-  registerIpcHandlers();
-  createWindow(filePath);
+  const window = createWindow(filePath);
+  const updates = setupUpdates(window);
+  registerIpcHandlers(settings => updates.setSilent(settings.silentUpdates));
 });
 
 app.on('window-all-closed', () => {

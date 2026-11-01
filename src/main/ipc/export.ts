@@ -7,6 +7,7 @@ import type { TrimVideoPayload, TrimVideoResult } from '../../shared/types.js';
 import { validateTrimRequest } from '../services/validation.js';
 
 let exporting = false;
+export function isExporting(): boolean { return exporting; }
 
 /**
  * Monta o caminho desejado do clipe dentro da pasta de saída:

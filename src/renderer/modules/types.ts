@@ -1,5 +1,5 @@
 import type {
-  AppSettings,
+  AppSettings, UpdateState,
   ExportOptions,
   TrimVideoPayload,
   TrimVideoResult,
@@ -9,6 +9,12 @@ import type {
 declare global {
   interface Window {
     api: {
+      getUpdateState: () => Promise<UpdateState>;
+      checkForUpdates: () => Promise<UpdateState>;
+      downloadUpdate: () => Promise<UpdateState>;
+      installUpdate: () => Promise<boolean>;
+      reportEditorDirty: (dirty: boolean) => void;
+      onUpdateState: (callback: (state: UpdateState) => void) => () => void;
       getPathForFile: (file: File) => string;
       validateVideo: (filePath: string) => Promise<ValidateVideoResult>;
       onExportProgress: (callback: (progress: ExportProgress) => void) => () => void;

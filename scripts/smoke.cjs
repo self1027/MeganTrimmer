@@ -38,6 +38,7 @@ const changeFps = () => evaluate(`document.querySelector('#frameRateSelect').val
 app.whenReady().then(async () => {
   const { registerIpcHandlers } = await import(pathToFileURL(path.join(root, 'dist/main/ipc/index.js')));
   const { registerExportIpc } = await import(pathToFileURL(path.join(root, 'dist/main/ipc/export.js')));
+  const { setupUpdates } = await import(pathToFileURL(path.join(root, 'dist/main/updates.js')));
   registerIpcHandlers();
   let revealFails = false;
   let revealCalls = 0;
@@ -47,6 +48,7 @@ app.whenReady().then(async () => {
     preload: path.join(root, 'dist/preload.js'), contextIsolation: true, nodeIntegration: false,
     backgroundThrottling: false,
   } });
+  setupUpdates(window);
   window.webContents.on('console-message', (_event, level, message) => { if (level === 3) failures.push(message); });
   window.webContents.on('preload-error', (_event, _file, error) => failures.push(String(error)));
   await window.loadFile(path.join(root, 'dist/renderer/index.html'));

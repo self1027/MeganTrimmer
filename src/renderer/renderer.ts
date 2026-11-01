@@ -5,6 +5,7 @@ import { setupExport } from './modules/export.js';
 import { setupSettings } from './modules/settings.js';
 import { setupResizeHandler } from './modules/thumbnails.js';
 import { setupSession } from './modules/session.js';
+import { setupUpdates } from './modules/updates.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
   setupVideoPlayer();
@@ -14,6 +15,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupExport();
   setupSettings();
   setupSession();
+  setupUpdates();
   await populateExportOptions();
 
   const externalFile = new URLSearchParams(location.search).get('externalFile');

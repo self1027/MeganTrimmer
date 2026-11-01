@@ -15,6 +15,7 @@ export function hasUnsavedChanges(): boolean {
 }
 
 export function updateEditorState(): void {
+  window.api.reportEditorDirty(hasUnsavedChanges());
   const busy = state.exporting || state.loading;
   document.querySelectorAll<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>('[data-requires-video]')
     .forEach(control => control.disabled = !state.ready || busy);

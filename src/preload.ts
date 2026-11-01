@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import type {
-  AppSettings,
+  AppSettings, UpdateState,
   ExportOptions,
   TrimVideoPayload,
   TrimVideoResult,
@@ -8,6 +8,16 @@ import type {
 } from './shared/types.js';
 
 contextBridge.exposeInMainWorld('api', {
+  getUpdateState: (): Promise<UpdateState> => ipcRenderer.invoke('get-update-state'),
+  checkForUpdates: (): Promise<UpdateState> => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: (): Promise<UpdateState> => ipcRenderer.invoke('download-update'),
+  installUpdate: (): Promise<boolean> => ipcRenderer.invoke('install-update'),
+  reportEditorDirty: (dirty: boolean): void => ipcRenderer.send('editor-dirty', dirty),
+  onUpdateState: (callback: (state: UpdateState) => void): (() => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: UpdateState) => callback(state);
+    ipcRenderer.on('update-state', listener);
+    return () => { ipcRenderer.removeListener('update-state', listener); };
+  },
   getPathForFile: (file: File): string => webUtils.getPathForFile(file),
   validateVideo: (filePath: string): Promise<ValidateVideoResult> => ipcRenderer.invoke('validate-video', filePath),
   onExportProgress: (callback: (progress: ExportProgress) => void): (() => void) => {
