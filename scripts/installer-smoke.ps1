@@ -151,6 +151,7 @@ try {
   $machineFolder = (Get-ItemProperty -LiteralPath "HKLM:\Software\$guid").InstallLocation.TrimEnd('\')
   Require ($machineFolder -eq $msiFolder) "The MSI wizard did not retain its chosen custom directory. Installed at [$machineFolder]."
   AssertInstall 'machine' '1.2.0' $machineFolder
+  StopApps
   Run $setup @('/S')
   AssertInstall 'machine' $version $machineFolder
   Pass 'the actual published MSI upgrades in place without duplicate entries or data loss'
@@ -161,6 +162,7 @@ try {
   $customFolder = Join-Path $work 'MachineCustom\MeganTrimmer'
   Run $legacySetup @('/S', "/D=$customFolder")
   AssertInstall 'machine' '1.2.0' $customFolder
+  StopApps
   Run $setup @('/S')
   AssertInstall 'machine' $version $customFolder
   Pass 'legacy machine-wide installation in a custom path is preserved by the new installer'

@@ -12,6 +12,7 @@ public static class MeganMsiWizard {
   [DllImport("user32.dll")] static extern bool IsWindowEnabled(IntPtr window);
   [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
   [DllImport("user32.dll")] static extern int GetDlgCtrlID(IntPtr window);
+  [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr window, int index);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wparam, string text);
   [DllImport("user32.dll", EntryPoint="SendMessageW")] static extern IntPtr SendNumber(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
   static string Text(IntPtr window, bool className=false) {
@@ -25,6 +26,7 @@ public static class MeganMsiWizard {
     EnumWindows((window, unused) => {
       if (!IsWindowVisible(window) || Text(window, true)!="#32770" || !Text(window).Contains("MeganTrimmer")) return true;
       string note=null;
+      bool hold=false;
       EnumChildWindows(window, (child, state) => {
         var label=Text(child).Replace("&", "");
         if (IsWindowVisible(child) && Text(child, true)=="Edit") {
@@ -35,14 +37,16 @@ public static class MeganMsiWizard {
             note="set directory control "+GetDlgCtrlID(child)+" from ["+current+"]";
           }
         }
-        if (Text(child, true)=="Button" && (label.StartsWith("Run ") || label.StartsWith("Executar ")) && label.Contains("MeganTrimmer")
-            && SendNumber(child, 0x00F0, IntPtr.Zero, IntPtr.Zero)!=IntPtr.Zero) {
+        int kind=GetWindowLong(child, -16) & 0xF;
+        if (Text(child, true)=="Button" && (kind==2 || kind==3) && SendNumber(child, 0x00F0, IntPtr.Zero, IntPtr.Zero)!=IntPtr.Zero) {
           SendNumber(child, 0x00F1, IntPtr.Zero, IntPtr.Zero);
+          hold=true;
+          note="cleared run checkbox ["+label+"]";
         }
         return true;
       }, IntPtr.Zero);
       var next=GetDlgItem(window, 1);
-      if (next!=IntPtr.Zero && IsWindowEnabled(next)) {
+      if (!hold && next!=IntPtr.Zero && IsWindowEnabled(next)) {
         action=(note==null?"":note+" ")+Text(next);
         SendNumber(next, 0x00F5, IntPtr.Zero, IntPtr.Zero);
       } else action=note;
