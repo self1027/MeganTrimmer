@@ -1,4 +1,4 @@
-import ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from './ffmpeg.js';
 import type { VideoInfo } from '../../shared/types.js';
 
 export function getVideoInfo(filePath: string): Promise<VideoInfo> {

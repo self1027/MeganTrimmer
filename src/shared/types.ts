@@ -36,7 +36,16 @@ export interface TrimVideoOptions {
 
 export type TrimVideoResult =
   | { ok: true; output: string }
-  | { ok: false; error: unknown };
+  | { ok: false; error: { message: string; details: string } };
+
+export interface ExportProgress {
+  percent: number;
+  phase: 'encoding' | 'fallback';
+}
+
+export type ValidateVideoResult =
+  | { ok: true; info: VideoInfo; url: string; name: string }
+  | { ok: false; error: string };
 
 export interface VideoInfo {
   width: number;

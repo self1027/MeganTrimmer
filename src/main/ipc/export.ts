@@ -4,6 +4,9 @@ import { trimVideo } from '../services/trim.js';
 import { resolveOutputPath } from '../services/output-path.js';
 import { loadSettings, resolveOutputFolder } from '../services/settings.js';
 import type { TrimVideoPayload, TrimVideoResult } from '../../shared/types.js';
+import { validateTrimRequest } from '../services/validation.js';
+
+let exporting = false;
 
 /**
  * Monta o caminho desejado do clipe dentro da pasta de saída:
@@ -24,11 +27,11 @@ function buildDesiredPath(input: string, folder: string, format?: string): strin
 }
 
 export function registerExportIpc(): void {
-  ipcMain.handle('trim-video', async (_, data: TrimVideoPayload): Promise<TrimVideoResult> => {
+  ipcMain.handle('trim-video', async (event, data: TrimVideoPayload): Promise<TrimVideoResult> => {
+    if (exporting) return { ok: false, error: { message: 'Já existe uma exportação em andamento.', details: '' } };
+    exporting = true;
     try {
-      if (!data || typeof data.input !== 'string' || data.input.trim() === '') {
-        throw new Error('Invalid trim payload: input is required');
-      }
+      await validateTrimRequest(data);
 
       const settings = loadSettings();
       const folder = resolveOutputFolder(settings);
@@ -47,12 +50,17 @@ export function registerExportIpc(): void {
           resolution: data.resolution,
           frameRate: data.frameRate,
           formatType: data.formatType,
-        }
+        },
+        progress => { if (!event.sender.isDestroyed()) event.sender.send('export-progress', progress); }
       );
       return { ok: true, output: finalPath };
     } catch (err) {
       console.error('Erro no corte:', err);
-      return { ok: false, error: err };
-    }
+      const details = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: {
+        message: details.includes('ffmpeg') ? 'Não foi possível exportar o corte. Consulte os detalhes e tente novamente.' : details.split('\n')[0],
+        details,
+      } };
+    } finally { exporting = false; }
   });
 }
