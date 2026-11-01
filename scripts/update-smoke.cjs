@@ -89,8 +89,16 @@ app.whenReady().then(async () => {
   window.close();
   await new Promise(resolve => setTimeout(resolve, 100));
   assert.deepEqual(installs, [[true, false]]);
+  updater.emit('error', new Error('installer could not start'));
+  await evaluate(`window.api.reportEditorDirty(true)`);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  window.close();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(prompts, 3, 'Installer error must restore the dirty-edit close guard');
+  assert.equal(window.isDestroyed(), false);
   assert.deepEqual(errors, []);
   fs.writeFileSync(path.join(artifacts, 'updates.png'), (await window.webContents.capturePage()).toPNG());
   console.log('PASS silent enabled after download installs on close without relaunch');
+  console.log('PASS failed installer restores the close guard');
   window.destroy(); app.exit(0);
 }).catch(error => { console.error(error); window?.destroy(); app.exit(1); });

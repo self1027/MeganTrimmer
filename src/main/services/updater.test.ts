@@ -161,3 +161,25 @@ test('development and portable have an inert unsupported service', async () => {
   assert.equal(service.install(true), false);
   assert.equal(service.installOnClose(), false);
 });
+
+test('an installer error emitted synchronously refuses exit and permits a retry', async () => {
+  const { updater, service } = fixture();
+  await service.check();
+  await service.download();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  updater.quitAndInstall = () => { updater.emit('error', new Error('installer missing')); };
+  assert.equal(service.install(true), false);
+  assert.equal(service.getState().status, 'error');
+  await service.check();
+  assert.equal(updater.checks, 2);
+});
+
+test('an asynchronous installer error unlocks checking again', async () => {
+  const { updater, service } = fixture();
+  await service.check();
+  updater.emit('update-downloaded', { version: '1.3.1' });
+  assert.equal(service.install(true), true);
+  updater.emit('error', new Error('could not launch installer'));
+  await service.check();
+  assert.equal(updater.checks, 2);
+});

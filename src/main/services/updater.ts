@@ -62,6 +62,7 @@ export class UpdateService {
   }
 
   private fail(): void {
+    this.installing = false;
     this.ready = false;
     this.publish({ status: 'error', message: 'Não foi possível atualizar. Verifique a conexão e tente novamente.' });
   }
@@ -89,7 +90,7 @@ export class UpdateService {
   install(relaunch: boolean): boolean {
     if (!this.updater || !this.ready || this.installing || !this.canInstall()) return false;
     this.installing = true;
-    try { this.updater.quitAndInstall(true, relaunch); return true; }
+    try { this.updater.quitAndInstall(true, relaunch); return this.installing; }
     catch { this.installing = false; this.fail(); return false; }
   }
 

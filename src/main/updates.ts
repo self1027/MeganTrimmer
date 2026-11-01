@@ -54,6 +54,7 @@ export function setupUpdates(window: BrowserWindow, injectedService?: UpdateServ
   };
   ipcMain.on('editor-dirty', reportDirty);
   const unsubscribe = service.subscribe(state => {
+    if (state.status === 'error') allowQuit = false;
     if (!window.isDestroyed()) window.webContents.send('update-state', state);
   });
   window.on('close', event => {
