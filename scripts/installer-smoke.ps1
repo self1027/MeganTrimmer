@@ -41,7 +41,8 @@ function AssertInstall([string]$Scope, [string]$ExpectedVersion, [string]$Folder
   $opposite = if ($Scope -eq 'user') { $machineKey } else { $userKey }
   Require (-not (Test-Path -LiteralPath $opposite)) 'Upgrade created a second installation scope.'
   $installed = Get-ItemProperty -LiteralPath ("HK" + $(if ($Scope -eq 'user') { 'CU' } else { 'LM' }) + ":\Software\$guid")
-  Require ($installed.InstallLocation.TrimEnd('\') -eq $Folder.TrimEnd('\')) 'Upgrade changed the installation directory.'
+  $actualFolder = $installed.InstallLocation.TrimEnd('\')
+  Require ($actualFolder -eq $Folder.TrimEnd('\')) "Installation directory is [$actualFolder], expected [$($Folder.TrimEnd('\'))]."
   $exe = Join-Path $Folder 'MeganTrimmer.exe'
   $fileVersion = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
   Require ($fileVersion -eq $ExpectedVersion) "Installed executable version is $fileVersion, expected $ExpectedVersion."
@@ -144,9 +145,11 @@ try {
   Invoke-WebRequest -Uri 'https://github.com/self1027/megan-trimmer/releases/download/v1.2.0/MeganTrimmer-Setup.msi' -OutFile $legacyMsi
   Require ((Get-FileHash -LiteralPath $legacyMsi -Algorithm SHA256).Hash -eq '4EA2A6B0118C2D9EF06805AD02120AEC46F1538757AA03D560CF582818DAC34C') 'Published legacy MSI checksum mismatch.'
   . (Join-Path $PSScriptRoot 'msi-wizard.ps1')
-  Invoke-LegacyMsi $legacyMsi (Join-Path $work 'published MSI custom path') (Join-Path $work 'legacy-msi.log')
-  $machineFolder = (Get-ItemProperty -LiteralPath "HKLM:\Software\$guid").InstallLocation
-  Require ($machineFolder -eq (Join-Path $work 'published MSI custom path')) 'The MSI wizard did not retain its chosen custom directory.'
+  $msiFolder = Join-Path $work 'MsiCustom\MeganTrimmer'
+  New-Item -ItemType Directory -Path $msiFolder -Force | Out-Null
+  Invoke-LegacyMsi $legacyMsi $msiFolder (Join-Path $work 'legacy-msi.log')
+  $machineFolder = (Get-ItemProperty -LiteralPath "HKLM:\Software\$guid").InstallLocation.TrimEnd('\')
+  Require ($machineFolder -eq $msiFolder) "The MSI wizard did not retain its chosen custom directory. Installed at [$machineFolder]."
   AssertInstall 'machine' '1.2.0' $machineFolder
   Run $setup @('/S')
   AssertInstall 'machine' $version $machineFolder
@@ -155,7 +158,7 @@ try {
 
   $legacySetup = Join-Path $work 'legacy-setup.exe'
   & (Join-Path $PSScriptRoot 'extract-msi.ps1') -Msi $legacyMsi -Output $legacySetup
-  $customFolder = Join-Path $work 'custom machine installation'
+  $customFolder = Join-Path $work 'MachineCustom\MeganTrimmer'
   Run $legacySetup @('/S', "/D=$customFolder")
   AssertInstall 'machine' '1.2.0' $customFolder
   Run $setup @('/S')

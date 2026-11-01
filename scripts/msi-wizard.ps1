@@ -23,16 +23,24 @@ public static class MeganMsiWizard {
     string action=null;
     EnumWindows((window, unused) => {
       if (!IsWindowVisible(window) || Text(window, true)!="#32770" || !Text(window).Contains("MeganTrimmer")) return true;
+      bool directoryPending=false;
       EnumChildWindows(window, (child, state) => {
         var label=Text(child).Replace("&", "");
-        if (IsWindowVisible(child) && Text(child, true)=="Edit" && GetDlgCtrlID(child)==1019) SendMessage(child, 0x000C, IntPtr.Zero, directory);
-        if (Text(child, true)=="Button" && (label.StartsWith("Run ") || label.StartsWith("Executar ")) && label.Contains("MeganTrimmer")) {
+        if (IsWindowVisible(child) && Text(child, true)=="Edit") {
+          if (!string.Equals(Text(child), directory, StringComparison.OrdinalIgnoreCase)) {
+            SendMessage(child, 0x000C, IntPtr.Zero, directory);
+            directoryPending=true;
+            action="set directory control "+GetDlgCtrlID(child);
+          }
+        }
+        if (Text(child, true)=="Button" && (label.StartsWith("Run ") || label.StartsWith("Executar ")) && label.Contains("MeganTrimmer")
+            && SendNumber(child, 0x00F0, IntPtr.Zero, IntPtr.Zero)!=IntPtr.Zero) {
           SendNumber(child, 0x00F1, IntPtr.Zero, IntPtr.Zero);
         }
         return true;
       }, IntPtr.Zero);
       var next=GetDlgItem(window, 1);
-      if (next!=IntPtr.Zero && IsWindowEnabled(next)) {
+      if (!directoryPending && next!=IntPtr.Zero && IsWindowEnabled(next)) {
         action=Text(next);
         SendNumber(next, 0x00F5, IntPtr.Zero, IntPtr.Zero);
       }
