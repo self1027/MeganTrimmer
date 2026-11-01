@@ -43,7 +43,8 @@ function AssertInstall([string]$Scope, [string]$ExpectedVersion, [string]$Folder
   $installed = Get-ItemProperty -LiteralPath ("HK" + $(if ($Scope -eq 'user') { 'CU' } else { 'LM' }) + ":\Software\$guid")
   Require ($installed.InstallLocation.TrimEnd('\') -eq $Folder.TrimEnd('\')) 'Upgrade changed the installation directory.'
   $exe = Join-Path $Folder 'MeganTrimmer.exe'
-  Require ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -eq $ExpectedVersion) 'Installed executable has the wrong version.'
+  $fileVersion = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
+  Require ($fileVersion -eq $ExpectedVersion) "Installed executable version is $fileVersion, expected $ExpectedVersion."
   $entries = @(foreach ($registry in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall')) {
     Get-ChildItem -LiteralPath $registry | Get-ItemProperty | Where-Object DisplayName -EQ 'MeganTrimmer'
   })
@@ -111,7 +112,7 @@ try {
   $updateStarted = Get-Date
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'update', $version)
   for ($attempt = 0; $attempt -lt 600; $attempt++) {
-    $installedVersion = (Get-Item -LiteralPath (Join-Path $userFolder 'MeganTrimmer.exe') -ErrorAction SilentlyContinue).VersionInfo.ProductVersion
+    $installedVersion = (Get-Item -LiteralPath (Join-Path $userFolder 'MeganTrimmer.exe') -ErrorAction SilentlyContinue).VersionInfo.FileVersion
     $registeredVersion = (Get-ItemProperty -LiteralPath $userKey -ErrorAction SilentlyContinue).DisplayVersion
     $reopened = @(Get-Process -Name MeganTrimmer -ErrorAction SilentlyContinue | Where-Object {
       $_.MainWindowHandle -ne 0 -and $_.Path -eq (Join-Path $userFolder 'MeganTrimmer.exe') -and $_.StartTime -gt $updateStarted
