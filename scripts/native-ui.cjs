@@ -1,5 +1,8 @@
 // Controls only the packaged test app on a disposable GitHub-hosted Windows runner.
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
   throw new Error('Native installer tests may only run on disposable GitHub-hosted runners.');
 }
@@ -73,13 +76,15 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
         await renderer.evaluate("document.querySelector('#updateNow').click()");
       }
     } else if (mode === 'export') {
-      await renderer.evaluate(`void window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '15', format: 'avi' })`);
+      await renderer.evaluate(`void (window.__nativeExport = window.api.trimVideo({ input: ${JSON.stringify(source)}, start: '0', duration: '60', format: 'avi' }))`);
       let busy = false;
       for (let i = 0; i < 100 && !busy; i++) {
         busy = await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())");
         if (!busy) await pause(100);
       }
       assert.ok(busy, 'The native app must really be exporting during the running-process test');
+    } else if (mode === 'assert-export') {
+      assert.equal(await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())"), true);
     } else if (mode === 'finish-export') {
       for (let i = 0; i < 400; i++) {
         const busy = await main.evaluate("import(process.getBuiltinModule('node:url').pathToFileURL(process.resourcesPath + '/app.asar/dist/main/ipc/export.js').href).then(m => m.isExporting())");
@@ -87,6 +92,12 @@ setTimeout(() => { console.error('Native UI test timed out'); process.exit(1); }
         if (i === 399) throw new Error('Export did not complete');
         await pause(150);
       }
+      const result = await renderer.evaluate('window.__nativeExport');
+      assert.equal(result.ok, true, JSON.stringify(result));
+      assert.ok(fs.statSync(result.output).size > 0);
+      const ffmpeg = path.resolve('release/win-unpacked/resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe');
+      const decoded = spawnSync(ffmpeg, ['-v', 'error', '-i', result.output, '-f', 'null', '-']);
+      assert.equal(decoded.status, 0, decoded.stderr?.toString());
     }
     console.log(`PASS packaged app ${mode}, version ${expectedVersion}`);
   } finally { renderer.close(); main.close(); }

@@ -98,16 +98,20 @@ try {
   Pass 'declining the update permits normal exit without installing; running-app upgrade is refused without termination'
 
   $appProcess = StartApp (Join-Path $userFolder 'MeganTrimmer.exe')
+  $updateStarted = Get-Date
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'update', $version)
   for ($attempt = 0; $attempt -lt 600; $attempt++) {
     $installedVersion = (Get-Item -LiteralPath (Join-Path $userFolder 'MeganTrimmer.exe') -ErrorAction SilentlyContinue).VersionInfo.ProductVersion
     $registeredVersion = (Get-ItemProperty -LiteralPath $userKey -ErrorAction SilentlyContinue).DisplayVersion
-    if ($installedVersion -eq $next -and $registeredVersion -eq $next -and $appProcess.HasExited -and @(Get-Process -Name MeganTrimmer -ErrorAction SilentlyContinue).Count -gt 0) { break }
+    $reopened = @(Get-Process -Name MeganTrimmer -ErrorAction SilentlyContinue | Where-Object {
+      $_.MainWindowHandle -ne 0 -and $_.Path -eq (Join-Path $userFolder 'MeganTrimmer.exe') -and $_.StartTime -gt $updateStarted
+    })
+    if ($installedVersion -eq $next -and $registeredVersion -eq $next -and $appProcess.HasExited -and $reopened.Count -gt 0) { break }
     Start-Sleep -Milliseconds 200
   }
   AssertInstall 'user' $next $userFolder
-  for ($attempt = 0; $attempt -lt 100 -and @(Get-Process -Name MeganTrimmer -ErrorAction SilentlyContinue).Count -eq 0; $attempt++) { Start-Sleep -Milliseconds 200 }
-  Require (@(Get-Process -Name MeganTrimmer -ErrorAction SilentlyContinue).Count -gt 0) 'Update did not relaunch the app.'
+  Require ($appProcess.HasExited) 'The original app did not exit for installation.'
+  Require ($reopened.Count -gt 0) 'Update did not open a new main window from the replaced executable.'
   StopApps
   Run $setup @('/S') @(2)
   AssertInstall 'user' $next $userFolder
@@ -136,11 +140,12 @@ try {
 
   $ffmpeg = Join-Path $root 'release/win-unpacked/resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe'
   $source = Join-Path $work 'source.mp4'
-  Run $ffmpeg @('-v','error','-f','lavfi','-i','color=c=blue:size=1920x1080:rate=60','-t','15','-c:v','libx264','-preset','ultrafast',$source)
+  Run $ffmpeg @('-v','error','-f','lavfi','-i','color=c=blue:size=1920x1080:rate=60','-t','60','-c:v','libx264','-preset','ultrafast',$source)
   $appProcess = StartApp (Join-Path $customFolder 'MeganTrimmer.exe')
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'export', $version, $source)
   Run $setup @('/S') @(2)
   Require (-not $appProcess.HasExited) 'Installer terminated an export.'
+  Invoke-NodeCheck @('scripts/native-ui.cjs', 'assert-export', $version)
   Invoke-NodeCheck @('scripts/native-ui.cjs', 'finish-export', $version)
   StopApps
   AssertInstall 'machine' $version $customFolder
